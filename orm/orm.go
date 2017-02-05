@@ -16,89 +16,88 @@ var (
 	ErrNotFound = errors.New("not found")
 )
 
-type dbQueryArgs struct {
+//Stmt db stmt.
+type Stmt struct {
 	table  string
 	where  string
 	sort   string
 	order  string
 	offset int
 	limit  int
+	db     *sql.DB
 }
 
-//QueryOption 查询选项
-type QueryOption func(*dbQueryArgs)
-
-func queryTable(table string) QueryOption {
-	return func(a *dbQueryArgs) {
-		a.table = table
+//NewStmt new db stmt.
+func NewStmt(db *sql.DB, table string) *Stmt {
+	return &Stmt{
+		table: table,
+		db:    db,
 	}
 }
 
-//QueryWhere 添加查询条件
-func QueryWhere(f string, args ...interface{}) QueryOption {
-	return func(a *dbQueryArgs) {
-		if len(args) > 0 {
-			a.where = fmt.Sprintf(f, args...)
-		} else {
-			a.where = f
-		}
+//Where 添加查询条件
+func (s *Stmt) Where(f string, args ...interface{}) *Stmt {
+	if len(args) > 0 {
+		s.where = fmt.Sprintf(f, args...)
+	} else {
+		s.where = f
 	}
+	return s
 }
 
-//QuerySort 添加sort
-func QuerySort(sort string) QueryOption {
-	return func(a *dbQueryArgs) {
-		a.sort = sort
-	}
+//Sort 添加sort
+func (s *Stmt) Sort(sort string) *Stmt {
+	s.sort = sort
+	return s
 }
 
-//QueryOrder 添加order
-func QueryOrder(order string) QueryOption {
-	return func(a *dbQueryArgs) {
-		a.order = order
-	}
+//Order 添加order
+func (s *Stmt) Order(order string) *Stmt {
+	s.order = order
+	return s
 }
 
-//QueryOffset 添加offset
-func QueryOffset(offset int) QueryOption {
-	return func(a *dbQueryArgs) {
-		a.offset = offset
-	}
+//Offset 添加offset
+func (s *Stmt) Offset(offset int) *Stmt {
+	s.offset = offset
+	return s
 }
 
-//QueryLimit 添加limit
-func QueryLimit(limit int) QueryOption {
-	return func(a *dbQueryArgs) { a.limit = limit }
+//Limit 添加limit
+func (s *Stmt) Limit(limit int) *Stmt {
+	s.limit = limit
+	return s
+}
+
+//SqlQueryBuilder build sql query.
+func (s *Stmt) SqlQueryBuilder(result interface{}) (string, error) {
+	rt := reflect.TypeOf(result)
+	if rt.Kind() != reflect.Ptr {
+		return "", fmt.Errorf("result type must be ptr, recv:%v", rt.Kind())
+	}
+
+	//ptr
+	rt = rt.Elem()
+	if rt.Kind() == reflect.Slice {
+		rt = rt.Elem()
+	} else {
+		//只查一条加上limit 1
+		s.limit = 1
+	}
+
+	//empty struct
+	if rt.NumField() == 0 {
+		return "", fmt.Errorf("result not found field")
+	}
+
+	return s.SqlQuery(rt), nil
 }
 
 // SqlQuery 根据条件及结构生成查询sql
-func SqlQuery(result interface{}, opts ...QueryOption) (sql string, elem reflect.Type, err error) {
-	var args dbQueryArgs
-	for _, o := range opts {
-		o(&args)
-	}
-
-	rt := reflect.TypeOf(result)
-
-	if rt.Kind() != reflect.Ptr {
-		err = fmt.Errorf("result type must be ptr, recv:%v", rt.Kind())
-		return
-	}
-	elem = rt.Elem()
-	if elem.Kind() == reflect.Slice {
-		elem = elem.Elem()
-	} else {
-		//只查一条加上limit 1
-		args.limit = 1
-	}
-	if elem.NumField() == 0 {
-		err = fmt.Errorf("result not found field")
-		return
-	}
+func (s *Stmt) SqlQuery(elem reflect.Type) string {
+	firstTable := strings.Split(s.table, ",")[0]
 
 	buf := bytes.NewBufferString("select ")
-
-	firstTable := strings.Split(args.table, ",")[0]
 
 	for i := 0; i < elem.NumField(); i++ {
 		name := elem.Field(i).Tag.Get("db")
@@ -115,44 +114,60 @@ func SqlQuery(result interface{}, opts ...QueryOption) (sql string, elem reflect
 
 	buf.Truncate(buf.Len() - 2)
 	buf.WriteString(" from ")
-	buf.WriteString(args.table)
+	buf.WriteString(s.table)
 
-	if args.where != "" {
+	if s.where != "" {
 		buf.WriteString(" where ")
-		buf.WriteString(args.where)
+		buf.WriteString(s.where)
 	}
 
-	if args.sort != "" {
+	if s.sort != "" {
 		buf.WriteString(" order by ")
-		buf.WriteString(args.sort)
-		if args.order != "" {
+		buf.WriteString(s.sort)
+		if s.order != "" {
 			buf.WriteString(" ")
-			buf.WriteString(args.order)
+			buf.WriteString(s.order)
 		}
 	}
 
-	if args.limit > 0 {
+	if s.limit > 0 {
 		buf.WriteString(" limit ")
-		if args.offset > 0 {
-			buf.WriteString(fmt.Sprintf("%d,", args.offset))
+		if s.offset > 0 {
+			buf.WriteString(fmt.Sprintf("%d,", s.offset))
 		}
-		buf.WriteString(fmt.Sprintf("%d", args.limit))
+		buf.WriteString(fmt.Sprintf("%d", s.limit))
 	}
 
-	sql = buf.String()
+	sql := buf.String()
 	log.Debugf("sql:%v", sql)
-	return
+	return sql
 }
 
 // Query 根据传入的result结构，生成查询sql，并返回执行结果， result 必需是一个指向切片的指针.
-func Query(db *sql.DB, table string, result interface{}, opts ...QueryOption) error {
-	opts = append(opts, queryTable(table))
-	sql, elem, err := SqlQuery(result, opts...)
-	if err != nil {
-		return errors.Trace(err)
+func (s *Stmt) Query(result interface{}) error {
+	rt := reflect.TypeOf(result)
+
+	if rt.Kind() != reflect.Ptr {
+		return fmt.Errorf("result type must be ptr, recv:%v", rt.Kind())
 	}
 
-	rows, err := db.Query(sql)
+	//ptr
+	rt = rt.Elem()
+	if rt.Kind() == reflect.Slice {
+		rt = rt.Elem()
+	} else {
+		//只查一条加上limit 1
+		s.limit = 1
+	}
+
+	//empty struct
+	if rt.NumField() == 0 {
+		return fmt.Errorf("result not found field")
+	}
+
+	sql := s.SqlQuery(rt)
+
+	rows, err := s.db.Query(sql)
 	if err != nil {
 		return errors.Trace(err)
 	}
@@ -162,13 +177,13 @@ func Query(db *sql.DB, table string, result interface{}, opts ...QueryOption) er
 
 	for rows.Next() {
 		var refs []interface{}
-		obj := reflect.New(elem)
+		obj := reflect.New(rt)
 
 		for i := 0; i < obj.Elem().NumField(); i++ {
 			refs = append(refs, obj.Elem().Field(i).Addr().Interface())
 		}
 
-		if err := rows.Scan(refs...); err != nil {
+		if err = rows.Scan(refs...); err != nil {
 			return errors.Trace(err)
 		}
 

@@ -13,7 +13,7 @@ func TestORMStruct(t *testing.T) {
 		User     string `db:"user"`
 		Password string `db:"passwd"`
 	}{}
-	sql, _, err := SqlQuery(&result, queryTable("userinfo"))
+	sql, err := NewStmt(nil, "userinfo").SqlQueryBuilder(&result)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -29,7 +29,8 @@ func TestORMArray(t *testing.T) {
 		User     string `db:"user"`
 		Password string `db:"passwd"`
 	}{}
-	sql, _, err := SqlQuery(&result, queryTable("userinfo"))
+	s := NewStmt(nil, "userinfo")
+	sql, err := s.SqlQueryBuilder(&result)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -45,7 +46,7 @@ func TestORMSort(t *testing.T) {
 		User     string `db:"user"`
 		Password string `db:"passwd"`
 	}{}
-	sql, _, err := SqlQuery(&result, queryTable("userinfo"), QuerySort("user"))
+	sql, err := NewStmt(nil, "userinfo").Sort("user").SqlQueryBuilder(&result)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -61,7 +62,7 @@ func TestORMSortOrder(t *testing.T) {
 		User     string `db:"user"`
 		Password string `db:"passwd"`
 	}{}
-	sql, _, err := SqlQuery(&result, queryTable("userinfo"), QuerySort("user"), QueryOrder("desc"))
+	sql, err := NewStmt(nil, "userinfo").Sort("user").Order("desc").SqlQueryBuilder(&result)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -77,7 +78,7 @@ func TestORMLimit(t *testing.T) {
 		User     string `db:"user"`
 		Password string `db:"passwd"`
 	}{}
-	sql, _, err := SqlQuery(&result, queryTable("userinfo"), QueryLimit(10))
+	sql, err := NewStmt(nil, "userinfo").Limit(10).SqlQueryBuilder(&result)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -93,7 +94,7 @@ func TestORMLimitOffset(t *testing.T) {
 		User     string `db:"user"`
 		Password string `db:"passwd"`
 	}{}
-	sql, _, err := SqlQuery(&result, queryTable("userinfo"), QueryLimit(10), QueryOffset(5))
+	sql, err := NewStmt(nil, "userinfo").Limit(10).Offset(5).SqlQueryBuilder(&result)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -109,7 +110,7 @@ func TestORMWhere(t *testing.T) {
 		User     string `db:"user"`
 		Password string `db:"passwd"`
 	}{}
-	sql, _, err := SqlQuery(&result, queryTable("userinfo"), QueryWhere("id=1010"))
+	sql, err := NewStmt(nil, "userinfo").Where("id=1010").SqlQueryBuilder(&result)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -126,7 +127,7 @@ func TestORMMutilTalbe(t *testing.T) {
 		Password string `db:"passwd"`
 		QQ       string `db:"ext.qq"`
 	}{}
-	sql, _, err := SqlQuery(&result, queryTable("userinfo, ext"), QueryWhere("ext.user_id=userinfo.id and id=1010"))
+	sql, err := NewStmt(nil, "userinfo, ext").Where("ext.user_id=userinfo.id and id=1010").SqlQueryBuilder(&result)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -134,4 +135,3 @@ func TestORMMutilTalbe(t *testing.T) {
 		t.Fatalf("expect:%s, recv:%s", expect, sql)
 	}
 }
-
