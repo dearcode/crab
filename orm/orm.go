@@ -93,52 +93,55 @@ func (s *Stmt) SqlQueryBuilder(result interface{}) (string, error) {
 	return s.SqlQuery(rt), nil
 }
 
-// SqlQuery 根据条件及结构生成查询sql
-func (s *Stmt) SqlQuery(elem reflect.Type) string {
-	firstTable := strings.Split(s.table, ",")[0]
-
-	buf := bytes.NewBufferString("select ")
-
-	for i := 0; i < elem.NumField(); i++ {
-		name := elem.Field(i).Tag.Get("db")
-		if name == "" {
-			name = FieldEscape(elem.Field(i).Name)
-		}
-		if !strings.Contains(name, ".") {
-			buf.WriteString(firstTable)
-			buf.WriteString(".")
-		}
-		buf.WriteString(name)
-		buf.WriteString(", ")
-	}
-
-	buf.Truncate(buf.Len() - 2)
-	buf.WriteString(" from ")
-	buf.WriteString(s.table)
-
+//SqlCondition where, order, limit
+func (s *Stmt) SqlCondition(bs *bytes.Buffer) {
 	if s.where != "" {
-		buf.WriteString(" where ")
-		buf.WriteString(s.where)
+		fmt.Fprintf(bs, " where %s", s.where)
 	}
 
 	if s.sort != "" {
-		buf.WriteString(" order by ")
-		buf.WriteString(s.sort)
+		fmt.Fprintf(bs, " order by %s", s.sort)
 		if s.order != "" {
-			buf.WriteString(" ")
-			buf.WriteString(s.order)
+			fmt.Fprintf(bs, " %s", s.order)
 		}
 	}
 
 	if s.limit > 0 {
-		buf.WriteString(" limit ")
+		bs.WriteString(" limit ")
 		if s.offset > 0 {
-			buf.WriteString(fmt.Sprintf("%d,", s.offset))
+			fmt.Fprintf(bs, "%d,", s.offset)
 		}
-		buf.WriteString(fmt.Sprintf("%d", s.limit))
+		fmt.Fprintf(bs, "%d", s.limit)
+	}
+}
+
+// SqlQuery 根据条件及结构生成查询sql
+func (s *Stmt) SqlQuery(rt reflect.Type) string {
+	firstTable := strings.Split(s.table, ",")[0]
+
+	bs := bytes.NewBufferString("select ")
+
+	for i := 0; i < rt.NumField(); i++ {
+		f := rt.Field(i)
+		if f.PkgPath != "" && !f.Anonymous { // unexported
+			continue
+		}
+		name := f.Tag.Get("db")
+		if name == "" {
+			name = FieldEscape(f.Name)
+		}
+		if !strings.Contains(name, ".") {
+			fmt.Fprintf(bs, "%s.", firstTable)
+		}
+		fmt.Fprintf(bs, "%s, ", name)
 	}
 
-	sql := buf.String()
+	bs.Truncate(bs.Len() - 2)
+	fmt.Fprintf(bs, " from %s", s.table)
+
+	s.SqlCondition(bs)
+
+	sql := bs.String()
 	log.Debugf("sql:%v", sql)
 	return sql
 }
@@ -206,27 +209,13 @@ func (s *Stmt) Query(result interface{}) error {
 	return nil
 }
 
-//Add 添加数据
-func Add(db *sql.DB, table string, data interface{}) (int64, error) {
-	rt := reflect.TypeOf(data)
-	rv := reflect.ValueOf(data)
-
-	if rt.Kind() == reflect.Ptr {
-		rt = rt.Elem()
-		rv = rv.Elem()
-	}
-
-	if rt.NumField() == 0 {
-		return 0, fmt.Errorf("data not found field")
-	}
-
+//SqlInsert 添加数据
+func (s *Stmt) SqlInsert(rt reflect.Type, rv reflect.Value) (sql string, refs []interface{}) {
 	bs := bytes.NewBufferString("insert into ")
-	bs.WriteString(table)
+	bs.WriteString(s.table)
 	bs.WriteString(" (")
 
-	ds := bytes.NewBufferString(") values (")
-
-	var refs []interface{}
+	dbs := bytes.NewBufferString(") values (")
 
 	for i := 0; i < rt.NumField(); i++ {
 		if rt.Field(i).PkgPath != "" && !rt.Field(i).Anonymous { // unexported
@@ -245,25 +234,23 @@ func Add(db *sql.DB, table string, data interface{}) (int64, error) {
 		bs.WriteString(", ")
 
 		if def != "" {
-			ds.WriteString(def)
-			ds.WriteString(", ")
+			dbs.WriteString(def)
+			dbs.WriteString(", ")
 			continue
 		}
 
-		ds.WriteString("?, ")
+		dbs.WriteString("?, ")
 		refs = append(refs, rv.Field(i).Interface())
 	}
+
 	bs.Truncate(bs.Len() - 2)
-	ds.Truncate(ds.Len() - 2)
-	bs.WriteString(ds.String())
+	dbs.Truncate(dbs.Len() - 2)
+
+	bs.WriteString(dbs.String())
+
 	bs.WriteString(") ")
-	sql := bs.String()
-	log.Debugf("sql:%v", sql)
-	r, err := db.Exec(sql, refs...)
-	if err != nil {
-		return 0, errors.Trace(err)
-	}
-	return r.LastInsertId()
+	sql = bs.String()
+	return
 }
 
 //FieldEscape 转换为小写下划线分隔
@@ -284,4 +271,86 @@ func FieldEscape(k string) string {
 		buf = append(buf, byte(c))
 	}
 	return string(buf)
+}
+
+// SqlUpdate 根据条件及结构生成update sql
+func (s *Stmt) SqlUpdate(rt reflect.Type, rv reflect.Value) (sql string, refs []interface{}) {
+	bs := bytes.NewBufferString("")
+	fmt.Fprintf(bs, "update `%s` set ", s.table)
+
+	for i := 0; i < rt.NumField(); i++ {
+		if rt.Field(i).PkgPath != "" && !rt.Field(i).Anonymous { // unexported
+			continue
+		}
+		def := rt.Field(i).Tag.Get("db_default")
+		if def == "auto" {
+			continue
+		}
+		name := rt.Field(i).Tag.Get("db")
+		if name == "" {
+			name = FieldEscape(rt.Field(i).Name)
+		}
+
+		fmt.Fprintf(bs, "`%s`=", name)
+
+		if def != "" {
+			fmt.Fprintf(bs, "%s, ", def)
+			continue
+		}
+
+		bs.WriteString("?, ")
+		refs = append(refs, rv.Field(i).Interface())
+	}
+
+	bs.Truncate(bs.Len() - 2)
+
+	s.SqlCondition(bs)
+
+	sql = bs.String()
+	log.Debugf("sql:%v", sql)
+	return
+}
+
+//Update sql update db.
+func (s *Stmt) Update(data interface{}) (int64, error) {
+	rt := reflect.TypeOf(data)
+	rv := reflect.ValueOf(data)
+
+	if rt.Kind() == reflect.Ptr {
+		rt = rt.Elem()
+		rv = rv.Elem()
+	}
+
+	if rt.NumField() == 0 {
+		return 0, fmt.Errorf("data not found field")
+	}
+	sql, refs := s.SqlUpdate(rt, rv)
+	r, err := s.db.Exec(sql, refs...)
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+	return r.RowsAffected()
+}
+
+//Insert sql update db.
+func (s *Stmt) Insert(data interface{}) (int64, error) {
+	rt := reflect.TypeOf(data)
+	rv := reflect.ValueOf(data)
+
+	if rt.Kind() == reflect.Ptr {
+		rt = rt.Elem()
+		rv = rv.Elem()
+	}
+
+	if rt.NumField() == 0 {
+		return 0, fmt.Errorf("data not found field")
+	}
+
+	sql, refs := s.SqlInsert(rt, rv)
+	r, err := s.db.Exec(sql, refs...)
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	return r.LastInsertId()
 }
