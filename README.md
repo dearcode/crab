@@ -1,4 +1,4 @@
-# petrel
+# Petrel
 petrel海燕，自己用的web框架, 不支持RESTFul，不是用来写接口的  
 
 # handler  

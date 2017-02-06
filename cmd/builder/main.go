@@ -342,10 +342,10 @@ func parseTable(db *sql.DB, table string) (*tableInfo, error) {
 func buildStruct(t *tableInfo) (string, error) {
 	buf := bytes.NewBufferString("")
 	for _, r := range t.rows {
-        switch {
-        case strings.Contains(r.Type, "int"):
-        }
-        fmt.Fprintf(buf, "%+v", r)
+		switch {
+		case strings.Contains(r.Type, "int"):
+		}
+		fmt.Fprintf(buf, "%+v", r)
 	}
 	return buf.String(), nil
 }
@@ -372,11 +372,11 @@ func main() {
 		if err != nil {
 			panic(errors.ErrorStack(err))
 		}
-        dat, err := buildStruct(t)
+		dat, err := buildStruct(t)
 		if err != nil {
 			panic(errors.ErrorStack(err))
 		}
-        fmt.Printf("data:%v\n", dat)
+		fmt.Printf("data:%v\n", dat)
 	}
 
 }

@@ -319,4 +319,3 @@ func (v *Validation) Valid(obj interface{}) (b bool, err error) {
 
 	return !v.HasErrors(), nil
 }
-
