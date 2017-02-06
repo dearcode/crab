@@ -43,6 +43,8 @@ const (
 	PUT
 	//DELETE http method.
 	DELETE
+	//RESTFul any method, may be get,post,put or delete.
+	RESTFul
 )
 
 //String 类型转字符串
@@ -56,6 +58,8 @@ func (m Method) String() string {
 		return "PUT"
 	case DELETE:
 		return "DELETE"
+	case RESTFul:
+		return "RESTFul"
 	}
 	return "NIL"
 }
