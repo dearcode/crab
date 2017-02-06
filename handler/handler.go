@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"net/http"
+	"reflect"
 	"strings"
 
 	"github.com/davygeek/log"
@@ -40,6 +41,47 @@ type server struct {
 	delete map[string]iface
 
 	prefix map[string]iface
+}
+
+//nameToPath 类名转路径
+func (s *server) nameToPath(name string) string {
+	buf := []byte(name)
+	for i := range buf {
+		if buf[i] == '.' || buf[i] == '*' {
+			buf[i] = '/'
+		}
+	}
+	buf = append(buf, '/')
+	return string(buf)
+}
+
+//AddInterface 自动注册接口
+//只要struct实现了DoGet(),DoPost(),DoDelete(),DoPut()接口就可以自动注册
+func (s *server) AddInterface(iface interface{}) error {
+	rt := reflect.TypeOf(iface)
+	if rt.Kind() != reflect.Ptr {
+		return fmt.Errorf("need ptr")
+	}
+	rv := reflect.ValueOf(iface)
+	for i := 0; i < rv.NumMethod(); i++ {
+		mt := rt.Method(i)
+		mv := rv.Method(i)
+		path := s.nameToPath(rt.String())
+
+		switch mt.Name {
+		case "DoPost":
+			s.AddHandler(POST, path, false, mv.Interface().(func(http.ResponseWriter, *http.Request)))
+		case "DoGet":
+			s.AddHandler(GET, path, false, mv.Interface().(func(http.ResponseWriter, *http.Request)))
+		case "DoPut":
+			s.AddHandler(PUT, path, false, mv.Interface().(func(http.ResponseWriter, *http.Request)))
+		case "DoDelete":
+			s.AddHandler(DELETE, path, false, mv.Interface().(func(http.ResponseWriter, *http.Request)))
+		}
+		log.Debugf("%v %v", mt.Name, path)
+	}
+
+	return nil
 }
 
 //AddHandler 注册接口
