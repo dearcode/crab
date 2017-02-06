@@ -1,7 +1,7 @@
 all: lint vet petrel
 
 FILES := $$(find . -name '*.go' | grep -vE 'vendor') 
-SOURCE_PATH := handler orm validation
+SOURCE_PATH := handler orm validation cache
 
 unused:
 	go get honnef.co/go/unused/cmd/unused
