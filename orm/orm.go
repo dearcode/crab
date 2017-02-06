@@ -13,6 +13,7 @@ import (
 )
 
 var (
+	//ErrNotFound db not found.
 	ErrNotFound = errors.New("not found")
 )
 
@@ -69,8 +70,8 @@ func (s *Stmt) Limit(limit int) *Stmt {
 	return s
 }
 
-//SqlQueryBuilder build sql query.
-func (s *Stmt) SqlQueryBuilder(result interface{}) (string, error) {
+//SQLQueryBuilder build sql query.
+func (s *Stmt) SQLQueryBuilder(result interface{}) (string, error) {
 	rt := reflect.TypeOf(result)
 	if rt.Kind() != reflect.Ptr {
 		return "", fmt.Errorf("result type must be ptr, recv:%v", rt.Kind())
@@ -90,11 +91,11 @@ func (s *Stmt) SqlQueryBuilder(result interface{}) (string, error) {
 		return "", fmt.Errorf("result not found field")
 	}
 
-	return s.SqlQuery(rt), nil
+	return s.SQLQuery(rt), nil
 }
 
-//SqlCondition where, order, limit
-func (s *Stmt) SqlCondition(bs *bytes.Buffer) {
+//SQLCondition where, order, limit
+func (s *Stmt) SQLCondition(bs *bytes.Buffer) {
 	if s.where != "" {
 		fmt.Fprintf(bs, " where %s", s.where)
 	}
@@ -115,8 +116,8 @@ func (s *Stmt) SqlCondition(bs *bytes.Buffer) {
 	}
 }
 
-// SqlQuery 根据条件及结构生成查询sql
-func (s *Stmt) SqlQuery(rt reflect.Type) string {
+// SQLQuery 根据条件及结构生成查询sql
+func (s *Stmt) SQLQuery(rt reflect.Type) string {
 	firstTable := strings.Split(s.table, ",")[0]
 
 	bs := bytes.NewBufferString("select ")
@@ -139,7 +140,7 @@ func (s *Stmt) SqlQuery(rt reflect.Type) string {
 	bs.Truncate(bs.Len() - 2)
 	fmt.Fprintf(bs, " from %s", s.table)
 
-	s.SqlCondition(bs)
+	s.SQLCondition(bs)
 
 	sql := bs.String()
 	log.Debugf("sql:%v", sql)
@@ -168,7 +169,7 @@ func (s *Stmt) Query(result interface{}) error {
 		return fmt.Errorf("result not found field")
 	}
 
-	sql := s.SqlQuery(rt)
+	sql := s.SQLQuery(rt)
 
 	rows, err := s.db.Query(sql)
 	if err != nil {
@@ -209,8 +210,8 @@ func (s *Stmt) Query(result interface{}) error {
 	return nil
 }
 
-//SqlInsert 添加数据
-func (s *Stmt) SqlInsert(rt reflect.Type, rv reflect.Value) (sql string, refs []interface{}) {
+//SQLInsert 添加数据
+func (s *Stmt) SQLInsert(rt reflect.Type, rv reflect.Value) (sql string, refs []interface{}) {
 	bs := bytes.NewBufferString("insert into ")
 	bs.WriteString(s.table)
 	bs.WriteString(" (")
@@ -273,8 +274,8 @@ func FieldEscape(k string) string {
 	return string(buf)
 }
 
-// SqlUpdate 根据条件及结构生成update sql
-func (s *Stmt) SqlUpdate(rt reflect.Type, rv reflect.Value) (sql string, refs []interface{}) {
+// SQLUpdate 根据条件及结构生成update sql
+func (s *Stmt) SQLUpdate(rt reflect.Type, rv reflect.Value) (sql string, refs []interface{}) {
 	bs := bytes.NewBufferString("")
 	fmt.Fprintf(bs, "update `%s` set ", s.table)
 
@@ -304,7 +305,7 @@ func (s *Stmt) SqlUpdate(rt reflect.Type, rv reflect.Value) (sql string, refs []
 
 	bs.Truncate(bs.Len() - 2)
 
-	s.SqlCondition(bs)
+	s.SQLCondition(bs)
 
 	sql = bs.String()
 	log.Debugf("sql:%v", sql)
@@ -324,7 +325,7 @@ func (s *Stmt) Update(data interface{}) (int64, error) {
 	if rt.NumField() == 0 {
 		return 0, fmt.Errorf("data not found field")
 	}
-	sql, refs := s.SqlUpdate(rt, rv)
+	sql, refs := s.SQLUpdate(rt, rv)
 	r, err := s.db.Exec(sql, refs...)
 	if err != nil {
 		return 0, errors.Trace(err)
@@ -346,7 +347,7 @@ func (s *Stmt) Insert(data interface{}) (int64, error) {
 		return 0, fmt.Errorf("data not found field")
 	}
 
-	sql, refs := s.SqlInsert(rt, rv)
+	sql, refs := s.SQLInsert(rt, rv)
 	r, err := s.db.Exec(sql, refs...)
 	if err != nil {
 		return 0, errors.Trace(err)

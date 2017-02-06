@@ -34,7 +34,7 @@ func TestORMStruct(t *testing.T) {
 		User     string
 		Password string
 	}{}
-	sql, err := NewStmt(nil, "userinfo").SqlQueryBuilder(&result)
+	sql, err := NewStmt(nil, "userinfo").SQLQueryBuilder(&result)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -51,7 +51,7 @@ func TestORMArray(t *testing.T) {
 		Password string
 	}{}
 	s := NewStmt(nil, "userinfo")
-	sql, err := s.SqlQueryBuilder(&result)
+	sql, err := s.SQLQueryBuilder(&result)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -67,7 +67,7 @@ func TestORMSort(t *testing.T) {
 		User     string
 		Password string
 	}{}
-	sql, err := NewStmt(nil, "userinfo").Sort("user").SqlQueryBuilder(&result)
+	sql, err := NewStmt(nil, "userinfo").Sort("user").SQLQueryBuilder(&result)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -83,7 +83,7 @@ func TestORMSortOrder(t *testing.T) {
 		User     string
 		Password string
 	}{}
-	sql, err := NewStmt(nil, "userinfo").Sort("user").Order("desc").SqlQueryBuilder(&result)
+	sql, err := NewStmt(nil, "userinfo").Sort("user").Order("desc").SQLQueryBuilder(&result)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -99,7 +99,7 @@ func TestORMLimit(t *testing.T) {
 		User     string
 		Password string
 	}{}
-	sql, err := NewStmt(nil, "userinfo").Limit(10).SqlQueryBuilder(&result)
+	sql, err := NewStmt(nil, "userinfo").Limit(10).SQLQueryBuilder(&result)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -115,7 +115,7 @@ func TestORMLimitOffset(t *testing.T) {
 		User     string
 		Password string
 	}{}
-	sql, err := NewStmt(nil, "userinfo").Limit(10).Offset(5).SqlQueryBuilder(&result)
+	sql, err := NewStmt(nil, "userinfo").Limit(10).Offset(5).SQLQueryBuilder(&result)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -131,7 +131,7 @@ func TestORMWhere(t *testing.T) {
 		User     string
 		Password string
 	}{}
-	sql, err := NewStmt(nil, "userinfo").Where("id=1010").SqlQueryBuilder(&result)
+	sql, err := NewStmt(nil, "userinfo").Where("id=1010").SQLQueryBuilder(&result)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -148,7 +148,7 @@ func TestORMMutilTalbe(t *testing.T) {
 		Password string
 		QQ       string `db:"ext.qq"`
 	}{}
-	sql, err := NewStmt(nil, "userinfo, ext").Where("ext.user_id=userinfo.id and id=1010").SqlQueryBuilder(&result)
+	sql, err := NewStmt(nil, "userinfo, ext").Where("ext.user_id=userinfo.id and id=1010").SQLQueryBuilder(&result)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

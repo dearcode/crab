@@ -10,7 +10,8 @@ import (
 
 const (
 	// ValidTag struct tag
-	ValidTag  = "valid"
+	ValidTag = "valid"
+	//AliaseTag 别名，报错时用的.
 	AliaseTag = "aliase"
 )
 

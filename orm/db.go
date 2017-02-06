@@ -3,7 +3,8 @@ package orm
 import (
 	"database/sql"
 	"fmt"
-	_ "github.com/go-sql-driver/mysql"
+	//mysql
+	//_ "github.com/go-sql-driver/mysql"
 	"strings"
 )
 

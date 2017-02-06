@@ -6,12 +6,18 @@ import (
 	"net/http"
 )
 
+//VariablePostion 变量位置.
 type VariablePostion int
-type InterfaceMethod int
+
+//Method 请求方式.
+type Method int
 
 const (
+	//URI 参数在uri里.
 	URI VariablePostion = iota
+	//HEADER 参数在头里.
 	HEADER
+	//BODY 参数在body里.
 	BODY
 )
 
@@ -29,15 +35,18 @@ func (p VariablePostion) String() string {
 }
 
 const (
-	GET InterfaceMethod = iota
+	//GET http method.
+	GET Method = iota
+	//POST http method.
 	POST
+	//PUT http method.
 	PUT
+	//DELETE http method.
 	DELETE
-	RESTful
 )
 
 //String 类型转字符串
-func (m InterfaceMethod) String() string {
+func (m Method) String() string {
 	switch m {
 	case GET:
 		return "GET"
@@ -47,8 +56,6 @@ func (m InterfaceMethod) String() string {
 		return "PUT"
 	case DELETE:
 		return "DELETE"
-	case RESTful:
-		return "RESTful"
 	}
 	return "NIL"
 }

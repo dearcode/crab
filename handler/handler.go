@@ -28,7 +28,7 @@ type Callback func(http.ResponseWriter, *http.Request)
 
 // iface 对外服务接口
 type iface struct {
-	method InterfaceMethod
+	method Method
 	path   string
 	call   Callback
 }
@@ -43,7 +43,7 @@ type server struct {
 }
 
 //AddHandler 注册接口
-func (s *server) AddHandler(method InterfaceMethod, path string, isPrefix bool, call Callback) {
+func (s *server) AddHandler(method Method, path string, isPrefix bool, call Callback) {
 	var ms map[string]iface
 	switch method {
 	case GET:
