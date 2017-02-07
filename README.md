@@ -2,9 +2,32 @@
 petrel海燕，自己用的web框架, 不支持RESTFul，不是用来写接口的  
 
 # handler  
-简单高效的HTTP路由  
+简单高效的HTTP路由，支持指定接口函数，支持自动注册接口  
+指定接口注册示例:  
+```go
+handler.Server.AddHandler(handler.GET, "/test/", false, onTestGet)
+handler.Server.AddHandler(handler.POST, "/test/", false, onTestPost)
+handler.Server.AddHandler(handler.DELETE, "/test/", false, onTestDelete)
+```
+自动注册接口示例：  
+```go
+handler.Server.AddInterface(&user{})
 
-# orm  
+type user struct {
+}
+
+//DoGet 默认get方法
+func (u *user) DoGet(w http.ResponseWriter, r *http.Request) {
+    w.Write([]byte("Get user"))
+}
+
+//DoPost 默认post方法
+func (u *user) DoPost(w http.ResponseWriter, r *http.Request) {
+    w.Write([]byte("Post user"))
+}
+```   
+
+# orm    
 只支持mysql  
 查询示例
 ```go
