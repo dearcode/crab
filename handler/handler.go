@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"runtime/debug"
 	"strings"
 
 	"github.com/davygeek/log"
@@ -110,6 +111,13 @@ func (s *server) AddHandler(method Method, path string, isPrefix bool, call Call
 
 //ServeHTTP 真正对外服务接口
 func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if p := recover(); p != nil {
+			log.Errorf("panic:%v req:%v, stack:%s", p, r, debug.Stack())
+			SendResponse(w, http.StatusInternalServerError, "%v", p)
+			return
+		}
+	}()
 	var i iface
 	var ok bool
 	log.Debugf("%v %v", r.Method, r.URL)

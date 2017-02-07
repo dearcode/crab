@@ -116,6 +116,18 @@ func (s *Stmt) SQLCondition(bs *bytes.Buffer) {
 	}
 }
 
+// SQLCount 根据条件及结构生成查询sql
+func (s *Stmt) SQLCount() string {
+	bs := bytes.NewBufferString("select count(*) from ")
+	bs.WriteString(s.table)
+
+	s.SQLCondition(bs)
+
+	sql := bs.String()
+	log.Debugf("sql:%v", sql)
+	return sql
+}
+
 // SQLQuery 根据条件及结构生成查询sql
 func (s *Stmt) SQLQuery(rt reflect.Type) string {
 	firstTable := strings.Split(s.table, ",")[0]
@@ -208,6 +220,24 @@ func (s *Stmt) Query(result interface{}) error {
 	log.Debugf("result %v", result)
 
 	return nil
+}
+
+//Count 查询总数.
+func (s *Stmt) Count() (int64, error) {
+	rows, err := s.db.Query(s.SQLCount())
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	rows.Next()
+
+	var n int64
+	if err = rows.Scan(&n); err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	return n, nil
 }
 
 //SQLInsert 添加数据

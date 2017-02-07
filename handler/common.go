@@ -82,3 +82,10 @@ func SendResponse(w http.ResponseWriter, status int, f string, args ...interface
 	buf, _ := json.Marshal(&r)
 	w.Write(buf)
 }
+
+//SendResponseData 返回结果，支持json
+func SendResponseData(w http.ResponseWriter, data interface{}) {
+	w.Header().Add("Content-Type", "application/json")
+	buf, _ := json.Marshal(&Response{Data: data})
+	w.Write(buf)
+}
