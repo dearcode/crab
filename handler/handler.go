@@ -6,8 +6,10 @@ import (
 	"reflect"
 	"runtime/debug"
 	"strings"
+	"sync"
 
 	"github.com/davygeek/log"
+	"github.com/google/btree"
 )
 
 var (
@@ -15,13 +17,22 @@ var (
 	Server = newHTTPServer()
 )
 
+type server struct {
+	post   map[string]iface
+	get    map[string]iface
+	put    map[string]iface
+	delete map[string]iface
+	prefix *btree.BTree
+	mu     sync.RWMutex
+}
+
 func newHTTPServer() *server {
 	return &server{
 		post:   make(map[string]iface),
 		get:    make(map[string]iface),
 		put:    make(map[string]iface),
 		delete: make(map[string]iface),
-		prefix: make(map[string]iface),
+		prefix: btree.New(3),
 	}
 }
 
@@ -35,13 +46,8 @@ type iface struct {
 	call   Callback
 }
 
-type server struct {
-	post   map[string]iface
-	get    map[string]iface
-	put    map[string]iface
-	delete map[string]iface
-
-	prefix map[string]iface
+func (i *iface) Less(bi btree.Item) bool {
+	return strings.Compare(i.path, bi.(*iface).path) == 1
 }
 
 //nameToPath 类名转路径
@@ -59,6 +65,9 @@ func (s *server) nameToPath(name string) string {
 //AddInterface 自动注册接口
 //只要struct实现了DoGet(),DoPost(),DoDelete(),DoPut()接口就可以自动注册
 func (s *server) AddInterface(iface interface{}) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	rt := reflect.TypeOf(iface)
 	if rt.Kind() != reflect.Ptr {
 		return fmt.Errorf("need ptr")
@@ -87,6 +96,14 @@ func (s *server) AddInterface(iface interface{}) error {
 
 //AddHandler 注册接口
 func (s *server) AddHandler(method Method, path string, isPrefix bool, call Callback) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	i := iface{method, path, call}
+	if isPrefix {
+		s.prefix.ReplaceOrInsert(&i)
+	}
+
 	var ms map[string]iface
 	switch method {
 	case GET:
@@ -98,15 +115,40 @@ func (s *server) AddHandler(method Method, path string, isPrefix bool, call Call
 	case DELETE:
 		ms = s.delete
 	}
-	if isPrefix {
-		ms = s.prefix
-	}
 
 	if _, ok := ms[path]; ok {
 		panic(fmt.Sprintf("exist url:%v %v", method, path))
 	}
 
-	ms[path] = iface{method, path, call}
+	ms[path] = i
+}
+
+func (s *server) iface(w http.ResponseWriter, r *http.Request) (i iface, ok bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	switch r.Method {
+	case "GET":
+		i, ok = s.get[r.URL.Path]
+	case "POST":
+		i, ok = s.post[r.URL.Path]
+	case "PUT":
+		i, ok = s.put[r.URL.Path]
+	case "DELETE":
+		i, ok = s.delete[r.URL.Path]
+	}
+
+	if ok {
+		return
+	}
+
+	//如果完全匹配没找到，再找前缀的
+	s.prefix.AscendGreaterOrEqual(&iface{path: r.URL.Path}, func(item btree.Item) bool {
+		i = *(item.(*iface))
+		ok = strings.HasPrefix(r.URL.Path, i.path)
+		return !ok
+	})
+	return
 }
 
 //ServeHTTP 真正对外服务接口
@@ -118,41 +160,14 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}()
-	var i iface
-	var ok bool
-	log.Debugf("%v %v", r.Method, r.URL)
 
-	switch r.Method {
-	case "GET":
-		i, ok = s.get[r.URL.Path]
-	case "POST":
-		i, ok = s.post[r.URL.Path]
-	case "PUT":
-		i, ok = s.put[r.URL.Path]
-	case "DELETE":
-		i, ok = s.delete[r.URL.Path]
-	default:
-		log.Errorf("invalid request req:%v", r)
-		SendResponse(w, http.StatusBadRequest, "invalid method:%v", r.Method)
-		return
-	}
-
-	//如果完全匹配没找到，再找前缀的
-	if !ok {
-		for k, v := range s.prefix {
-			if strings.HasPrefix(r.URL.Path, k) {
-				i = v
-				ok = true
-				break
-			}
-		}
-	}
-
+	i, ok := s.iface(w, r)
 	if !ok {
 		log.Errorf("handler not found, req:%v", r)
 		SendResponse(w, http.StatusBadRequest, "invalid request:%v", r)
 		return
 	}
+	log.Debugf("URL:%v, interface:[%v %v]", r.URL, i.method, i.path)
 
 	i.call(w, r)
 	return
