@@ -23,6 +23,7 @@ type Stmt struct {
 	where  string
 	sort   string
 	order  string
+	group  string
 	offset int
 	limit  int
 	db     *sql.DB
@@ -49,6 +50,12 @@ func (s *Stmt) Where(f string, args ...interface{}) *Stmt {
 //Sort 添加sort
 func (s *Stmt) Sort(sort string) *Stmt {
 	s.sort = sort
+	return s
+}
+
+//Group 添加group by.
+func (s *Stmt) Group(group string) *Stmt {
+	s.group = group
 	return s
 }
 
@@ -105,6 +112,10 @@ func (s *Stmt) SQLCondition(bs *bytes.Buffer) {
 		if s.order != "" {
 			fmt.Fprintf(bs, " %s", s.order)
 		}
+	}
+
+	if s.group != "" {
+		fmt.Fprintf(bs, " group by %s", s.group)
 	}
 
 	if s.limit > 0 {
