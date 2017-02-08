@@ -162,8 +162,8 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	i, ok := s.iface(w, r)
 	if !ok {
-		log.Errorf("handler not found, req:%v", r)
-		SendResponse(w, http.StatusBadRequest, "invalid request:%v", r)
+		log.Errorf("handler not found, req:%+v", r)
+		SendResponse(w, http.StatusBadRequest, "invalid request:%+v", r)
 		return
 	}
 	log.Debugf("URL:%v, interface:[%v %v]", r.URL, i.method, i.path)
