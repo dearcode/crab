@@ -11,7 +11,10 @@ handler.Server.AddHandler(handler.DELETE, "/test/", false, onTestDelete)
 ```
 自动注册接口示例：  
 ```go
-handler.Server.AddInterface(&user{})
+//以包名为路径
+handler.Server.AddInterface(&user{}, "")
+//指定path
+handler.Server.AddInterface(&user{}, "/api/user/")
 
 type user struct {
 }
