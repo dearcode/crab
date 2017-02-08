@@ -64,7 +64,7 @@ func (s *server) nameToPath(name string) string {
 
 //AddInterface 自动注册接口
 //只要struct实现了DoGet(),DoPost(),DoDelete(),DoPut()接口就可以自动注册
-func (s *server) AddInterface(iface interface{}) error {
+func (s *server) AddInterface(iface interface{}, path string) error {
 	rt := reflect.TypeOf(iface)
 	if rt.Kind() != reflect.Ptr {
 		return fmt.Errorf("need ptr")
@@ -73,7 +73,9 @@ func (s *server) AddInterface(iface interface{}) error {
 	for i := 0; i < rv.NumMethod(); i++ {
 		mt := rt.Method(i)
 		mv := rv.Method(i)
-		path := s.nameToPath(rt.String())
+		if path == "" {
+			path = s.nameToPath(rt.String())
+		}
 
 		switch mt.Name {
 		case "DoPost":
