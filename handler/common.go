@@ -89,3 +89,15 @@ func SendResponseData(w http.ResponseWriter, data interface{}) {
 	buf, _ := json.Marshal(&Response{Data: data})
 	w.Write(buf)
 }
+
+//SendRows 为bootstrap-talbe返回结果，根据条件查找，total是总记录数，rows是数据
+func SendRows(w http.ResponseWriter, total int64, data interface{}) {
+	var resp = struct {
+		Total int64
+		Rows  interface{}
+	}{total, data}
+
+	w.Header().Add("Content-Type", "application/json")
+	buf, _ := json.Marshal(resp)
+	w.Write(buf)
+}
