@@ -65,9 +65,6 @@ func (s *server) nameToPath(name string) string {
 //AddInterface 自动注册接口
 //只要struct实现了DoGet(),DoPost(),DoDelete(),DoPut()接口就可以自动注册
 func (s *server) AddInterface(iface interface{}) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	rt := reflect.TypeOf(iface)
 	if rt.Kind() != reflect.Ptr {
 		return fmt.Errorf("need ptr")
