@@ -207,6 +207,10 @@ func (s *Stmt) Query(result interface{}) error {
 		obj := reflect.New(rt)
 
 		for i := 0; i < obj.Elem().NumField(); i++ {
+			f := rt.Field(i)
+			if f.PkgPath != "" && !f.Anonymous { // unexported
+				continue
+			}
 			refs = append(refs, obj.Elem().Field(i).Addr().Interface())
 		}
 
