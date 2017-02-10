@@ -17,8 +17,10 @@ const (
 	URI VariablePostion = iota
 	//HEADER 参数在头里.
 	HEADER
-	//BODY 参数在body里.
-	BODY
+	//JSON 参数在body的json里.
+	JSON
+	//FORM 参数在form表单中.
+	FORM
 )
 
 //String 类型转字符串
@@ -28,8 +30,10 @@ func (p VariablePostion) String() string {
 		return "URI"
 	case HEADER:
 		return "HEADER"
-	case BODY:
-		return "BODY"
+	case JSON:
+		return "JSON"
+	case FORM:
+		return "FORM"
 	}
 	return "NIL"
 }
