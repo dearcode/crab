@@ -14,17 +14,17 @@ var (
 
 func init() {
 	/*
-		   CREATE TABLE `userinfo` (
-		   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-		   `user` varchar(32) DEFAULT NULL,
-		   `password` varchar(32) DEFAULT NULL,
-		   `ctime` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
-		   `mtime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-		   PRIMARY KEY (`id`)
-		   ) ENGINE=MyISAM;
+	   CREATE TABLE `userinfo` (
+	       `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+	       `user` varchar(32) DEFAULT NULL,
+	       `password` varchar(32) DEFAULT NULL,
+	       `ctime` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
+	       `mtime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	       PRIMARY KEY (`id`)
+	   ) ENGINE=MyISAM;
 
-		dbc = NewDB("127.0.0.1", 3306, "test", "orm_test", "orm_test_password", "utf8", "10")
 	*/
+	dbc = NewDB("192.168.199.199", 3306, "cwind", "orm_test", "orm_test_password", "utf8", "10")
 }
 
 func TestORMStruct(t *testing.T) {
@@ -257,4 +257,33 @@ func TestORMInsert(t *testing.T) {
 	}
 
 	t.Logf("id:%+v", id)
+}
+
+type site struct {
+	ID   int64 `db_defult:"auto"`
+	Name string
+	List struct {
+		ID   int64
+		Name string
+	} `relation:"site.list_id = list.id"`
+}
+
+func TestORMSubStruct(t *testing.T) {
+	site := site{}
+
+	if dbc == nil {
+		return
+	}
+
+	db, err := dbc.GetConnection()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	defer db.Close()
+
+	if err := NewStmt(db, "site").Query(&site); err != nil {
+		t.Fatal(err.Error())
+	}
+
+	t.Logf("site:%+v", site)
 }

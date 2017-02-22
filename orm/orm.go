@@ -101,6 +101,13 @@ func (s *Stmt) SQLQueryBuilder(result interface{}) (string, error) {
 	return s.SQLQuery(rt), nil
 }
 
+func (s *Stmt) addWhere(w string) {
+	if s.where != "" {
+		s.where += " and "
+	}
+	s.where += w
+}
+
 //SQLCondition where, order, limit
 func (s *Stmt) SQLCondition(bs *bytes.Buffer) {
 	if s.where != "" {
@@ -139,15 +146,16 @@ func (s *Stmt) SQLCount() string {
 	return sql
 }
 
-// SQLQuery 根据条件及结构生成查询sql
-func (s *Stmt) SQLQuery(rt reflect.Type) string {
-	firstTable := strings.Split(s.table, ",")[0]
-
-	bs := bytes.NewBufferString("select ")
-
+func (s *Stmt) SQLColumn(rt reflect.Type, table string) string {
+	bs := bytes.NewBufferString("")
 	for i := 0; i < rt.NumField(); i++ {
 		f := rt.Field(i)
 		if f.PkgPath != "" && !f.Anonymous { // unexported
+			continue
+		}
+		if f.Type.Kind() == reflect.Struct {
+			bs.WriteString(s.SQLColumn(f.Type, FieldEscape(f.Name)))
+			s.addWhere(f.Tag.Get("relation"))
 			continue
 		}
 		name := f.Tag.Get("db")
@@ -155,10 +163,29 @@ func (s *Stmt) SQLQuery(rt reflect.Type) string {
 			name = FieldEscape(f.Name)
 		}
 		if !strings.Contains(name, ".") {
-			fmt.Fprintf(bs, "%s.", firstTable)
+			fmt.Fprintf(bs, "%s.", table)
 		}
 		fmt.Fprintf(bs, "%s, ", name)
 	}
+
+	//TODO 这里以后可以删除
+	if bs.Len() > 0 {
+		for _, t := range strings.Split(s.table, ",") {
+			if t == table {
+				return bs.String()
+			}
+		}
+		s.table += ","
+		s.table += table
+	}
+	return bs.String()
+}
+
+// SQLQuery 根据条件及结构生成查询sql
+func (s *Stmt) SQLQuery(rt reflect.Type) string {
+	firstTable := strings.Split(s.table, ",")[0]
+	bs := bytes.NewBufferString("select ")
+	bs.WriteString(s.SQLColumn(rt, firstTable))
 
 	bs.Truncate(bs.Len() - 2)
 	fmt.Fprintf(bs, " from %s", s.table)
@@ -211,6 +238,17 @@ func (s *Stmt) Query(result interface{}) error {
 			if f.PkgPath != "" && !f.Anonymous { // unexported
 				continue
 			}
+			if f.Type.Kind() == reflect.Struct {
+				for j := 0; j < obj.Elem().Field(i).NumField(); j++ {
+					sf := rt.Field(i).Type.Field(j)
+					if sf.PkgPath != "" && !sf.Anonymous { // unexported
+						continue
+					}
+					refs = append(refs, obj.Elem().Field(i).Field(j).Addr().Interface())
+				}
+				continue
+			}
+
 			refs = append(refs, obj.Elem().Field(i).Addr().Interface())
 		}
 
