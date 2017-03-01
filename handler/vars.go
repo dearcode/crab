@@ -32,6 +32,9 @@ func UnmarshalForm(req *http.Request, postion VariablePostion, result interface{
 
 	for i := 0; i < rt.NumField(); i++ {
 		f := rt.Field(i)
+		if f.PkgPath != "" && !f.Anonymous { // unexported
+			continue
+		}
 		key := f.Tag.Get("json")
 		if key == "" {
 			key = f.Name
@@ -45,6 +48,7 @@ func UnmarshalForm(req *http.Request, postion VariablePostion, result interface{
 			val = req.Header.Get(key)
 		}
 
+		log.Debugf("field:%v, val:%v", f, val)
 		switch f.Type.Kind() {
 		case reflect.Int, reflect.Int64:
 			vi, err := strconv.ParseInt(val, 10, 64)

@@ -305,6 +305,9 @@ func (s *Stmt) SQLInsert(rt reflect.Type, rv reflect.Value) (sql string, refs []
 		if rt.Field(i).PkgPath != "" && !rt.Field(i).Anonymous { // unexported
 			continue
 		}
+		if rt.Field(i).Type.Kind() == reflect.Struct {
+			continue
+		}
 		def := rt.Field(i).Tag.Get("db_default")
 		if def == "auto" {
 			continue
@@ -334,6 +337,7 @@ func (s *Stmt) SQLInsert(rt reflect.Type, rv reflect.Value) (sql string, refs []
 
 	bs.WriteString(") ")
 	sql = bs.String()
+	log.Debugf("sql:%v", sql)
 	return
 }
 
