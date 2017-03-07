@@ -1,4 +1,4 @@
-all: petrel
+all: crab
 
 FILES := $$(find . -name '*.go' | grep -vE 'vendor') 
 SOURCE_PATH := handler orm validation cache server
@@ -23,7 +23,7 @@ fmt:
 	@for path in $(SOURCE_PATH); do echo "gofmt -s -l -w $$path";  gofmt -s -l -w $$path;  done;
 
 
-petrel:
+crab:
 	go build -o bin/$@ -ldflags '$(LDFLAGS)' ./main.go
 
 

@@ -77,7 +77,7 @@ type testConf struct {
 		HeaderSize int
 	}
 
-    aaa int
+	aaa int
 }
 
 func TestConfigStruct(t *testing.T) {

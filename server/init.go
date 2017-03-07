@@ -1,7 +1,7 @@
 package server
 
 import (
-	"github.com/dearcode/petrel/handler"
+	"github.com/dearcode/crab/handler"
 )
 
 func init() {

@@ -10,7 +10,7 @@ import (
 
 	"github.com/davygeek/log"
 
-	"github.com/dearcode/petrel/validation"
+	"github.com/dearcode/crab/validation"
 )
 
 // UnmarshalForm 解析form中或者url中参数, 只支持int和string.

@@ -5,8 +5,8 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/dearcode/petrel/handler"
-	_ "github.com/dearcode/petrel/server"
+	"github.com/dearcode/crab/handler"
+	_ "github.com/dearcode/crab/server"
 )
 
 func main() {
