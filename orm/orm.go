@@ -199,6 +199,9 @@ func (s *Stmt) SQLQuery(rt reflect.Type) string {
 
 // Query 根据传入的result结构，生成查询sql，并返回执行结果， result 必需是一个指向切片的指针.
 func (s *Stmt) Query(result interface{}) error {
+	if result == nil {
+		return nil
+	}
 	rt := reflect.TypeOf(result)
 
 	if rt.Kind() != reflect.Ptr {

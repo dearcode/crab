@@ -155,7 +155,7 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if p := recover(); p != nil {
 			log.Errorf("panic:%v req:%v, stack:%s", p, r, debug.Stack())
-			SendResponse(w, http.StatusInternalServerError, "%v", p)
+			Abort(w, "%v\n%s", p, debug.Stack())
 			return
 		}
 	}()

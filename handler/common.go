@@ -80,11 +80,17 @@ func SendResponse(w http.ResponseWriter, status int, f string, args ...interface
 	w.Header().Add("Content-Type", "application/json")
 	r := Response{Status: status, Message: f}
 	if len(args) > 0 {
-		r.Message = fmt.Sprintf(f, args)
+		r.Message = fmt.Sprintf(f, args...)
 	}
 
 	buf, _ := json.Marshal(&r)
 	w.Write(buf)
+}
+
+//Abort 返回结果，支持json
+func Abort(w http.ResponseWriter, f string, args ...interface{}) {
+	w.WriteHeader(http.StatusInternalServerError)
+	fmt.Fprintf(w, f, args...)
 }
 
 //SendResponseData 返回结果，支持json
