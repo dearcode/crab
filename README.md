@@ -1,5 +1,35 @@
-# Petrel
-petrel海燕，自己用的web框架, 不支持RESTFul，不是用来写接口的  
+# Crab
+自己用的web框架  
+
+# config  
+加载ini格式的配置文件, 支持以;或者#开头的注释
+```go
+type testConf struct {
+	DB struct {
+		Domain string
+		Port   int `default:"9088"`
+		Enable bool
+	}
+    aaa int
+}
+
+var conf testConf
+if err := LoadConfig(path, &conf); err != nil {
+    t.Fatalf(errors.ErrorStack(err))
+}
+t.Logf("conf:%+v", conf)
+
+```
+配置文件  
+```ini
+ [db]
+domain    =jd.com
+enable=true
+# test comments
+;port=3306
+```
+如上例：只要传入对应的ini文件全路径及要解析到的struct就可以了，简单高效.  
+
 
 # handler  
 简单高效的HTTP路由，支持指定接口函数，支持自动注册接口  
