@@ -153,9 +153,13 @@ func (s *Stmt) SQLColumn(rt reflect.Type, table string) string {
 		if f.PkgPath != "" && !f.Anonymous { // unexported
 			continue
 		}
-		if f.Type.Kind() == reflect.Struct {
+		switch f.Type.Kind() {
+		case reflect.Struct:
 			bs.WriteString(s.SQLColumn(f.Type, FieldEscape(f.Name)))
-			s.addWhere(f.Tag.Get("relation"))
+			n := FieldEscape(f.Name)
+			s.addWhere(fmt.Sprintf("%s.%s_id = %s.id", rt.Name(), n, n))
+			continue
+		case reflect.Slice:
 			continue
 		}
 		name := f.Tag.Get("db")
@@ -197,6 +201,11 @@ func (s *Stmt) SQLQuery(rt reflect.Type) string {
 	return sql
 }
 
+func (s *Stmt) addRelation(t1, t2 string, id int64) *Stmt {
+	s.addWhere(fmt.Sprintf("id in (select %s_id from %s_%s_relation where %s_id=%d)", t1, t2, t1, t2, id))
+	return s
+}
+
 // Query 根据传入的result结构，生成查询sql，并返回执行结果， result 必需是一个指向切片的指针.
 func (s *Stmt) Query(result interface{}) error {
 	if result == nil {
@@ -234,38 +243,68 @@ func (s *Stmt) Query(result interface{}) error {
 
 	for rows.Next() {
 		var refs []interface{}
-		obj := reflect.New(rt)
+		obj := reflect.New(rt).Elem()
+		var idx int
 
-		for i := 0; i < obj.Elem().NumField(); i++ {
+		for i := 0; i < obj.NumField(); i++ {
 			f := rt.Field(i)
 			if f.PkgPath != "" && !f.Anonymous { // unexported
 				continue
 			}
-			if f.Type.Kind() == reflect.Struct {
-				for j := 0; j < obj.Elem().Field(i).NumField(); j++ {
+
+			if f.Name == "ID" {
+				idx = len(refs)
+			}
+
+			switch f.Type.Kind() {
+			case reflect.Struct:
+				//一对一，这里代码重复是为了减少交互.
+				for j := 0; j < obj.Field(i).NumField(); j++ {
 					sf := rt.Field(i).Type.Field(j)
 					if sf.PkgPath != "" && !sf.Anonymous { // unexported
 						continue
 					}
-					refs = append(refs, obj.Elem().Field(i).Field(j).Addr().Interface())
+
+					refs = append(refs, obj.Field(i).Field(j).Addr().Interface())
 				}
+				continue
+			case reflect.Slice:
 				continue
 			}
 
-			refs = append(refs, obj.Elem().Field(i).Addr().Interface())
+			refs = append(refs, obj.Field(i).Addr().Interface())
 		}
 
 		if err = rows.Scan(refs...); err != nil {
 			return errors.Trace(err)
 		}
 
+		//一对多
+		for i := 0; i < obj.NumField(); i++ {
+			f := rt.Field(i)
+			if f.PkgPath != "" && !f.Anonymous { // unexported
+				continue
+			}
+			if f.Type.Kind() != reflect.Slice {
+				continue
+			}
+
+			id := *refs[idx].(*int64)
+			m := FieldEscape(f.Name)
+			if err = NewStmt(s.db, FieldEscape(f.Name)).addRelation(m, rt.Name(), id).Query(obj.Field(i).Addr().Interface()); err != nil {
+				if errors.Cause(err) != ErrNotFound {
+					return errors.Trace(err)
+				}
+			}
+		}
+
 		if rv.Kind() == reflect.Struct {
-			reflect.ValueOf(result).Elem().Set(reflect.ValueOf(obj.Elem().Interface()))
+			reflect.ValueOf(result).Elem().Set(reflect.ValueOf(obj.Interface()))
 			log.Debugf("result %v", result)
 			return nil
 		}
 
-		rv = reflect.Append(rv, obj.Elem())
+		rv = reflect.Append(rv, obj)
 	}
 
 	if rv.Kind() == reflect.Struct || rv.Len() == 0 {

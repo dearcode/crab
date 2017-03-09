@@ -265,11 +265,17 @@ type site struct {
 	List struct {
 		ID   int64
 		Name string
-	} `relation:"site.list_id = list.id"`
+	}
+
+	Filter []struct {
+		ID   int64
+		Key1 string
+		Key2 string
+	}
 }
 
 func TestORMSubStruct(t *testing.T) {
-	site := site{}
+	site := []site{}
 
 	if dbc == nil {
 		return
