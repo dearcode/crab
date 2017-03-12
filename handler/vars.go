@@ -9,7 +9,9 @@ import (
 	"strconv"
 
 	"github.com/davygeek/log"
+	"github.com/juju/errors"
 
+	"github.com/dearcode/crab/meta"
 	"github.com/dearcode/crab/validation"
 )
 
@@ -17,7 +19,7 @@ import (
 func UnmarshalForm(req *http.Request, postion VariablePostion, result interface{}) error {
 	if postion == FORM {
 		if err := req.ParseForm(); err != nil {
-			return err
+			return errors.Trace(err)
 		}
 	}
 
@@ -71,7 +73,7 @@ func UnmarshalForm(req *http.Request, postion VariablePostion, result interface{
 func UnmarshalJSON(req *http.Request, result interface{}) error {
 	data, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 	return json.Unmarshal(data, result)
 }
@@ -79,6 +81,9 @@ func UnmarshalJSON(req *http.Request, result interface{}) error {
 // UnmarshalValidate 解析并检证参数.
 func UnmarshalValidate(req *http.Request, postion VariablePostion, result interface{}) error {
 	var err error
+	if result == nil {
+		return meta.ErrArgIsNil
+	}
 
 	if postion == JSON {
 		err = UnmarshalJSON(req, result)
@@ -87,13 +92,13 @@ func UnmarshalValidate(req *http.Request, postion VariablePostion, result interf
 	}
 
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	log.Debugf("request %s vars:%v", postion, result)
 	valid := validation.Validation{}
 	_, err = valid.Valid(result)
-	return err
+	return errors.Trace(err)
 }
 
 //ParseHeaderVars 解析并验证头中参数.

@@ -10,11 +10,8 @@ import (
 
 	"github.com/davygeek/log"
 	"github.com/juju/errors"
-)
 
-var (
-	//ErrNotFound db not found.
-	ErrNotFound = errors.New("not found")
+	"github.com/dearcode/crab/meta"
 )
 
 //Stmt db stmt.
@@ -32,7 +29,7 @@ type Stmt struct {
 //NewStmt new db stmt.
 func NewStmt(db *sql.DB, table string) *Stmt {
 	return &Stmt{
-		table: table,
+		table: FieldEscape(table),
 		db:    db,
 	}
 }
@@ -146,6 +143,7 @@ func (s *Stmt) SQLCount() string {
 	return sql
 }
 
+//SQLColumn 生成查询需要的列，目前只是内部用.
 func (s *Stmt) SQLColumn(rt reflect.Type, table string) string {
 	bs := bytes.NewBufferString("")
 	for i := 0; i < rt.NumField(); i++ {
@@ -157,7 +155,7 @@ func (s *Stmt) SQLColumn(rt reflect.Type, table string) string {
 		case reflect.Struct:
 			bs.WriteString(s.SQLColumn(f.Type, FieldEscape(f.Name)))
 			n := FieldEscape(f.Name)
-			s.addWhere(fmt.Sprintf("%s.%s_id = %s.id", rt.Name(), n, n))
+			s.addWhere(fmt.Sprintf("%s.%s_id = %s.id", table, n, n))
 			continue
 		case reflect.Slice:
 			continue
@@ -201,7 +199,17 @@ func (s *Stmt) SQLQuery(rt reflect.Type) string {
 	return sql
 }
 
+func (s *Stmt) firstTable() string {
+	if idx := strings.Index(s.table, ","); idx > -1 {
+		return s.table[:idx]
+	}
+	return s.table
+}
+
+// addRelation 添加多表关联条件
 func (s *Stmt) addRelation(t1, t2 string, id int64) *Stmt {
+	t1 = FieldEscape(t1)
+	t2 = FieldEscape(t2)
 	s.addWhere(fmt.Sprintf("id in (select %s_id from %s_%s_relation where %s_id=%d)", t1, t2, t1, t2, id))
 	return s
 }
@@ -209,12 +217,13 @@ func (s *Stmt) addRelation(t1, t2 string, id int64) *Stmt {
 // Query 根据传入的result结构，生成查询sql，并返回执行结果， result 必需是一个指向切片的指针.
 func (s *Stmt) Query(result interface{}) error {
 	if result == nil {
-		return nil
+		return meta.ErrArgIsNil
 	}
+
 	rt := reflect.TypeOf(result)
 
 	if rt.Kind() != reflect.Ptr {
-		return fmt.Errorf("result type must be ptr, recv:%v", rt.Kind())
+		return errors.Trace(meta.ErrArgNotPtr)
 	}
 
 	//ptr
@@ -290,9 +299,11 @@ func (s *Stmt) Query(result interface{}) error {
 			}
 
 			id := *refs[idx].(*int64)
-			m := FieldEscape(f.Name)
-			if err = NewStmt(s.db, FieldEscape(f.Name)).addRelation(m, rt.Name(), id).Query(obj.Field(i).Addr().Interface()); err != nil {
-				if errors.Cause(err) != ErrNotFound {
+			lr := obj.Field(i).Addr().Interface()
+
+			//填充一对多结果，每次去查询
+			if err = NewStmt(s.db, f.Name).addRelation(f.Name, s.firstTable(), id).Query(lr); err != nil {
+				if errors.Cause(err) != meta.ErrNotFound {
 					return errors.Trace(err)
 				}
 			}
@@ -308,7 +319,7 @@ func (s *Stmt) Query(result interface{}) error {
 	}
 
 	if rv.Kind() == reflect.Struct || rv.Len() == 0 {
-		return errors.Trace(ErrNotFound)
+		return errors.Trace(meta.ErrNotFound)
 	}
 
 	reflect.ValueOf(result).Elem().Set(reflect.ValueOf(rv.Interface()))
@@ -443,6 +454,9 @@ func (s *Stmt) SQLUpdate(rt reflect.Type, rv reflect.Value) (sql string, refs []
 
 //Update sql update db.
 func (s *Stmt) Update(data interface{}) (int64, error) {
+	if data == nil {
+		return 0, errors.Trace(meta.ErrArgIsNil)
+	}
 	rt := reflect.TypeOf(data)
 	rv := reflect.ValueOf(data)
 
@@ -452,7 +466,7 @@ func (s *Stmt) Update(data interface{}) (int64, error) {
 	}
 
 	if rt.NumField() == 0 {
-		return 0, fmt.Errorf("data not found field")
+		return 0, errors.Trace(meta.ErrFieldNotFound)
 	}
 	sql, refs := s.SQLUpdate(rt, rv)
 	r, err := s.db.Exec(sql, refs...)
@@ -464,6 +478,9 @@ func (s *Stmt) Update(data interface{}) (int64, error) {
 
 //Insert sql update db.
 func (s *Stmt) Insert(data interface{}) (int64, error) {
+	if data == nil {
+		return 0, errors.Trace(meta.ErrArgIsNil)
+	}
 	rt := reflect.TypeOf(data)
 	rv := reflect.ValueOf(data)
 
@@ -473,7 +490,7 @@ func (s *Stmt) Insert(data interface{}) (int64, error) {
 	}
 
 	if rt.NumField() == 0 {
-		return 0, fmt.Errorf("data not found field")
+		return 0, errors.Trace(meta.ErrFieldNotFound)
 	}
 
 	sql, refs := s.SQLInsert(rt, rv)

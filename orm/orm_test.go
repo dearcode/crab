@@ -259,7 +259,7 @@ func TestORMInsert(t *testing.T) {
 	t.Logf("id:%+v", id)
 }
 
-type site struct {
+type siteInfo struct {
 	ID   int64 `db_defult:"auto"`
 	Name string
 	List struct {
@@ -275,7 +275,7 @@ type site struct {
 }
 
 func TestORMSubStruct(t *testing.T) {
-	site := []site{}
+	site := []siteInfo{}
 
 	if dbc == nil {
 		return
