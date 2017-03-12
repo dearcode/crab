@@ -50,7 +50,10 @@ func UnmarshalForm(req *http.Request, postion VariablePostion, result interface{
 			val = req.Header.Get(key)
 		}
 
-		log.Debugf("field:%v, val:%v", f, val)
+		if val == "" {
+			continue
+		}
+
 		switch f.Type.Kind() {
 		case reflect.Int, reflect.Int64:
 			vi, err := strconv.ParseInt(val, 10, 64)
@@ -62,6 +65,17 @@ func UnmarshalForm(req *http.Request, postion VariablePostion, result interface{
 				return fmt.Errorf("key:%v value:%v format error", key, val)
 			}
 			rv.Field(i).SetInt(vi)
+		case reflect.Uint, reflect.Uint64:
+			vi, err := strconv.ParseUint(val, 10, 64)
+			if err != nil {
+				//不需要验证的key就不返回错误了
+				if f.Tag.Get("valid") == "" {
+					break
+				}
+				return fmt.Errorf("key:%v value:%v format error", key, val)
+			}
+			rv.Field(i).SetUint(vi)
+
 		case reflect.String:
 			rv.Field(i).SetString(val)
 		}

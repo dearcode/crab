@@ -106,7 +106,7 @@ func (s *Stmt) addWhere(w string) {
 }
 
 //SQLCondition where, order, limit
-func (s *Stmt) SQLCondition(bs *bytes.Buffer) {
+func (s *Stmt) SQLCondition(bs *bytes.Buffer) *bytes.Buffer {
 	if s.where != "" {
 		fmt.Fprintf(bs, " where %s", s.where)
 	}
@@ -129,6 +129,7 @@ func (s *Stmt) SQLCondition(bs *bytes.Buffer) {
 		}
 		fmt.Fprintf(bs, "%d", s.limit)
 	}
+	return bs
 }
 
 // SQLCount 根据条件及结构生成查询sql
@@ -416,40 +417,34 @@ func FieldEscape(k string) string {
 
 // SQLUpdate 根据条件及结构生成update sql
 func (s *Stmt) SQLUpdate(rt reflect.Type, rv reflect.Value) (sql string, refs []interface{}) {
-	bs := bytes.NewBufferString("")
-	fmt.Fprintf(bs, "update `%s` set ", s.table)
+	bs := bytes.NewBufferString(fmt.Sprintf("update `%s` set ", s.table))
 
 	for i := 0; i < rt.NumField(); i++ {
 		if rt.Field(i).PkgPath != "" && !rt.Field(i).Anonymous { // unexported
 			continue
 		}
-		def := rt.Field(i).Tag.Get("db_default")
-		if def == "auto" {
+		switch rt.Field(i).Type.Kind() {
+		case reflect.Struct, reflect.Slice:
 			continue
 		}
+
+		if def := rt.Field(i).Tag.Get("db_default"); def != "" {
+			continue
+		}
+
 		name := rt.Field(i).Tag.Get("db")
 		if name == "" {
 			name = FieldEscape(rt.Field(i).Name)
 		}
 
-		fmt.Fprintf(bs, "`%s`=", name)
+		fmt.Fprintf(bs, "`%s`=?, ", name)
 
-		if def != "" {
-			fmt.Fprintf(bs, "%s, ", def)
-			continue
-		}
-
-		bs.WriteString("?, ")
 		refs = append(refs, rv.Field(i).Interface())
 	}
 
 	bs.Truncate(bs.Len() - 2)
 
-	s.SQLCondition(bs)
-
-	sql = bs.String()
-	log.Debugf("sql:%v", sql)
-	return
+	return s.SQLCondition(bs).String(), refs
 }
 
 //Update sql update db.
@@ -468,6 +463,7 @@ func (s *Stmt) Update(data interface{}) (int64, error) {
 	if rt.NumField() == 0 {
 		return 0, errors.Trace(meta.ErrFieldNotFound)
 	}
+
 	sql, refs := s.SQLUpdate(rt, rv)
 	r, err := s.db.Exec(sql, refs...)
 	if err != nil {
