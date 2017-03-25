@@ -208,7 +208,7 @@ func (s *Stmt) firstTable() string {
 }
 
 // addRelation 添加多表关联条件
-func (s *Stmt) addRelation(t1, t2 string, id int64) *Stmt {
+func (s *Stmt) addRelation(t1, t2 string, id interface{}) *Stmt {
 	t1 = FieldEscape(t1)
 	t2 = FieldEscape(t2)
 	s.addWhere(fmt.Sprintf("id in (select %s_id from %s_%s_relation where %s_id=%d)", t1, t2, t1, t2, id))
@@ -299,8 +299,8 @@ func (s *Stmt) Query(result interface{}) error {
 				continue
 			}
 
-			id := *refs[idx].(*int64)
 			lr := obj.Field(i).Addr().Interface()
+			id := reflect.ValueOf(refs[idx]).Elem().Interface()
 
 			//填充一对多结果，每次去查询
 			if err = NewStmt(s.db, f.Name).addRelation(f.Name, s.firstTable(), id).Query(lr); err != nil {
