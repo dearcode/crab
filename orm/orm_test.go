@@ -1,6 +1,7 @@
 package orm
 
 import (
+	"database/sql"
 	"fmt"
 	"testing"
 	"time"
@@ -23,8 +24,8 @@ func init() {
 	       PRIMARY KEY (`id`)
 	   ) ENGINE=MyISAM;
 
+	   dbc = NewDB("192.168.199.199", 3306, "cwind", "orm_test", "orm_test_password", "utf8", "10")
 	*/
-	dbc = NewDB("192.168.199.199", 3306, "cwind", "orm_test", "orm_test_password", "utf8", "10")
 }
 
 func TestORMStruct(t *testing.T) {
@@ -259,37 +260,32 @@ func TestORMInsert(t *testing.T) {
 	t.Logf("id:%+v", id)
 }
 
-type siteInfo struct {
-	ID   int64 `db_defult:"auto"`
-	Name string
-	List struct {
-		ID   int64
-		Name string
-	}
-
-	Filter []struct {
-		ID   int64
-		Key1 string
-		Key2 string
-	}
-}
-
 func TestORMSubStruct(t *testing.T) {
-	site := []siteInfo{}
+	site := []struct {
+		ID     int64 `db_defult:"auto"`
+		Name   string
+		UserID sql.NullInt64
+		List   struct {
+			ID   int64
+			Name string
+		} `db_table:"one"`
 
-	if dbc == nil {
-		return
-	}
+		Filter []struct {
+			ID   int64
+			Key1 string
+			Key2 string
+		} `db_table:"more"`
+	}{}
 
-	db, err := dbc.GetConnection()
+	sql := "select site.id, site.name, site.user_id, list.id, list.name from site,list where site.list_id = list.id"
+
+	str, err := NewStmt(nil, "site").SQLQueryBuilder(&site)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	defer db.Close()
-
-	if err := NewStmt(db, "site").Query(&site); err != nil {
-		t.Fatal(err.Error())
+	if str != sql {
+		t.Fatalf("expect:%s, recv:%s", sql, str)
 	}
 
-	t.Logf("site:%+v", site)
+	t.Logf("sql:%+v", str)
 }

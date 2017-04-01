@@ -8,8 +8,8 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/davygeek/log"
 	"github.com/juju/errors"
+	"github.com/zssky/log"
 
 	"github.com/dearcode/crab/meta"
 )
@@ -154,10 +154,12 @@ func (s *Stmt) SQLColumn(rt reflect.Type, table string) string {
 		}
 		switch f.Type.Kind() {
 		case reflect.Struct:
-			bs.WriteString(s.SQLColumn(f.Type, FieldEscape(f.Name)))
-			n := FieldEscape(f.Name)
-			s.addWhere(fmt.Sprintf("%s.%s_id = %s.id", table, n, n))
-			continue
+			if f.Tag.Get("db_table") == "one" {
+				bs.WriteString(s.SQLColumn(f.Type, FieldEscape(f.Name)))
+				n := FieldEscape(f.Name)
+				s.addWhere(fmt.Sprintf("%s.%s_id = %s.id", table, n, n))
+				continue
+			}
 		case reflect.Slice:
 			continue
 		}
@@ -296,6 +298,10 @@ func (s *Stmt) Query(result interface{}) error {
 				continue
 			}
 			if f.Type.Kind() != reflect.Slice {
+				continue
+			}
+
+			if f.Tag.Get("db_table") != "more" {
 				continue
 			}
 
