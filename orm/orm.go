@@ -29,7 +29,7 @@ type Stmt struct {
 //NewStmt new db stmt.
 func NewStmt(db *sql.DB, table string) *Stmt {
 	return &Stmt{
-		table: FieldEscape(table),
+		table: table,
 		db:    db,
 	}
 }
