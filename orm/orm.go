@@ -309,7 +309,7 @@ func (s *Stmt) Query(result interface{}) error {
 			id := reflect.ValueOf(refs[idx]).Elem().Interface()
 
 			//填充一对多结果，每次去查询
-			if err = NewStmt(s.db, f.Name).addRelation(f.Name, s.firstTable(), id).Query(lr); err != nil {
+			if err = NewStmt(s.db, FieldEscape(f.Name)).addRelation(f.Name, s.firstTable(), id).Query(lr); err != nil {
 				if errors.Cause(err) != meta.ErrNotFound {
 					return errors.Trace(err)
 				}
