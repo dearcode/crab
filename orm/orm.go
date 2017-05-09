@@ -270,16 +270,18 @@ func (s *Stmt) Query(result interface{}) error {
 
 			switch f.Type.Kind() {
 			case reflect.Struct:
-				//一对一，这里代码重复是为了减少交互.
-				for j := 0; j < obj.Field(i).NumField(); j++ {
-					sf := rt.Field(i).Type.Field(j)
-					if sf.PkgPath != "" && !sf.Anonymous { // unexported
-						continue
-					}
+				if f.Tag.Get("db_table") == "one" {
+					//一对一，这里代码重复是为了减少交互.
+					for j := 0; j < obj.Field(i).NumField(); j++ {
+						sf := rt.Field(i).Type.Field(j)
+						if sf.PkgPath != "" && !sf.Anonymous { // unexported
+							continue
+						}
 
-					refs = append(refs, obj.Field(i).Field(j).Addr().Interface())
+						refs = append(refs, obj.Field(i).Field(j).Addr().Interface())
+					}
+					continue
 				}
-				continue
 			case reflect.Slice:
 				continue
 			}
