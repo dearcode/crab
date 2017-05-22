@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/davygeek/log"
+	"github.com/zssky/log"
 	"github.com/google/btree"
 )
 

@@ -147,6 +147,7 @@ func (s *Stmt) SQLCount() string {
 //SQLColumn 生成查询需要的列，目前只是内部用.
 func (s *Stmt) SQLColumn(rt reflect.Type, table string) string {
 	bs := bytes.NewBufferString("")
+
 	for i := 0; i < rt.NumField(); i++ {
 		f := rt.Field(i)
 		if f.PkgPath != "" && !f.Anonymous { // unexported
@@ -155,9 +156,11 @@ func (s *Stmt) SQLColumn(rt reflect.Type, table string) string {
 		switch f.Type.Kind() {
 		case reflect.Struct:
 			if f.Tag.Get("db_table") == "one" {
+				s.table += ","
+				s.table += FieldEscape(f.Name)
 				bs.WriteString(s.SQLColumn(f.Type, FieldEscape(f.Name)))
-				n := FieldEscape(f.Name)
-				s.addWhere(fmt.Sprintf("%s.%s_id = %s.id", table, n, n))
+				field := FieldEscape(f.Name)
+				s.addWhere(fmt.Sprintf("%s.%s_id = %s.id", table, field, field))
 				continue
 			}
 		case reflect.Slice:
@@ -173,16 +176,6 @@ func (s *Stmt) SQLColumn(rt reflect.Type, table string) string {
 		fmt.Fprintf(bs, "%s, ", name)
 	}
 
-	//TODO 这里以后可以删除
-	if bs.Len() > 0 {
-		for _, t := range strings.Split(s.table, ",") {
-			if t == table {
-				return bs.String()
-			}
-		}
-		s.table += ","
-		s.table += table
-	}
 	return bs.String()
 }
 

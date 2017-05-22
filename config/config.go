@@ -54,8 +54,8 @@ func TrimSplit(raw, sep string) []string {
 }
 
 //NewConfig 加载配置文件.
-func NewConfig(f string) (c *Config, err error) {
-	dat, err := ioutil.ReadFile(f)
+func NewConfig(path string) (c *Config, err error) {
+	dat, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -145,8 +145,8 @@ func (c *Config) GetData(s, k string, result interface{}, d interface{}) error {
 	return nil
 }
 
-func LoadConfig(f string, result interface{}) error {
-	c, err := NewConfig(f)
+func LoadConfig(path string, result interface{}) error {
+	c, err := NewConfig(path)
 	if err != nil {
 		return errors.Trace(err)
 	}

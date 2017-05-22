@@ -7,26 +7,8 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
-
-var (
-	dbc *DB
-)
-
-func init() {
-	/*
-	   CREATE TABLE `userinfo` (
-	       `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-	       `user` varchar(32) DEFAULT NULL,
-	       `password` varchar(32) DEFAULT NULL,
-	       `ctime` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
-	       `mtime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-	       PRIMARY KEY (`id`)
-	   ) ENGINE=MyISAM;
-
-	   dbc = NewDB("192.168.199.199", 3306, "cwind", "orm_test", "orm_test_password", "utf8", "10")
-	*/
-}
 
 func TestORMStruct(t *testing.T) {
 	expect := "select userinfo.id, userinfo.user, userinfo.password from userinfo limit 1"
@@ -165,15 +147,13 @@ func TestORMQuerySlice(t *testing.T) {
 		Password string
 	}{}
 
-	if dbc == nil {
-		return
-	}
-
-	db, err := dbc.GetConnection()
+	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatal(err.Error())
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 	defer db.Close()
+
+	mock.ExpectQuery("select userinfo.id, userinfo.user, userinfo.password from userinfo order by id desc").WillReturnRows(sqlmock.NewRows([]string{"id", "user", "password"}).AddRow(3, "333", "3333").AddRow(1, "111", "1111"))
 
 	if err = NewStmt(db, "userinfo").Sort("id").Order("desc").Query(&result); err != nil {
 		t.Fatal(err.Error())
@@ -189,15 +169,13 @@ func TestORMQueryOne(t *testing.T) {
 		Password string
 	}{}
 
-	if dbc == nil {
-		return
-	}
-
-	db, err := dbc.GetConnection()
+	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatal(err.Error())
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 	defer db.Close()
+
+	mock.ExpectQuery("select userinfo.id, userinfo.user, userinfo.password from userinfo where id=(.+) limit 1").WillReturnRows(sqlmock.NewRows([]string{"id", "user", "password"}).AddRow(2, "tgy", "123456"))
 
 	if err = NewStmt(db, "userinfo").Where("id=2").Query(&result); err != nil {
 		t.Fatal(err.Error())
@@ -214,22 +192,21 @@ func TestORMUpdate(t *testing.T) {
 		User:     fmt.Sprintf("new_user_%d", time.Now().Unix()),
 		Password: fmt.Sprintf("new_password_%d", time.Now().Unix()),
 	}
-	if dbc == nil {
-		return
-	}
 
-	db, err := dbc.GetConnection()
+	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatal(err.Error())
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 	defer db.Close()
+
+	mock.ExpectExec("update `userinfo` set `user`=(.+), `password`=(.+) where id=(.+)").WithArgs(data.User, data.Password).WillReturnResult(sqlmock.NewResult(0, 1))
 
 	id, err := NewStmt(db, "userinfo").Where("id=2").Update(&data)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	t.Logf("id:%+v", id)
+	t.Logf("affected row:%+v", id)
 }
 
 func TestORMInsert(t *testing.T) {
@@ -242,22 +219,20 @@ func TestORMInsert(t *testing.T) {
 		Password: fmt.Sprintf("password_%d", time.Now().Unix()),
 	}
 
-	if dbc == nil {
-		return
-	}
-
-	db, err := dbc.GetConnection()
+	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatal(err.Error())
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 	defer db.Close()
+
+	mock.ExpectExec("").WillReturnResult(sqlmock.NewResult(1, 0))
 
 	id, err := NewStmt(db, "userinfo").Insert(&data)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	t.Logf("id:%+v", id)
+	t.Logf("new id:%+v", id)
 }
 
 func TestORMSubStruct(t *testing.T) {
