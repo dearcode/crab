@@ -33,24 +33,10 @@ func TrimSpace(raw string) string {
 
 // TrimSplit 按sep拆分，并去掉空字符.
 func TrimSplit(raw, sep string) []string {
-	var ss []string
-
-	s := TrimSpace(raw)
-	if s == "" {
-		return ss
+	if i := strings.Index(raw, sep); i > 0 {
+		return []string{TrimSpace(raw[:i]), TrimSpace(raw[i+1:])}
 	}
-
-	ss = strings.Split(s, sep)
-	i := 0
-	for _, s := range ss {
-		s = TrimSpace(s)
-		if s != "" {
-			ss[i] = s
-			i++
-		}
-	}
-
-	return ss[:i]
+	return []string{raw}
 }
 
 //NewConfig 加载配置文件.
@@ -63,7 +49,7 @@ func NewConfig(path string) (c *Config, err error) {
 	c = &Config{kv: make(map[string]string)}
 	s := ""
 
-	for _, line := range TrimSplit(string(dat), "\n") {
+	for _, line := range strings.Split(string(dat), "\n") {
 		line = TrimSpace(line)
 		if len(line) < 3 || line[0] == ';' || line[0] == '#' {
 			continue

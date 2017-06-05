@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/zssky/log"
 	"github.com/google/btree"
+	"github.com/zssky/log"
 )
 
 var (
