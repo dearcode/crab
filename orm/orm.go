@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"unicode"
 
 	"github.com/juju/errors"
 	"github.com/zssky/log"
 
 	"github.com/dearcode/crab/meta"
+	"github.com/dearcode/crab/util"
 )
 
 //Stmt db stmt.
@@ -157,9 +157,9 @@ func (s *Stmt) SQLColumn(rt reflect.Type, table string) string {
 		case reflect.Struct:
 			if f.Tag.Get("db_table") == "one" {
 				s.table += ","
-				s.table += FieldEscape(f.Name)
-				bs.WriteString(s.SQLColumn(f.Type, FieldEscape(f.Name)))
-				field := FieldEscape(f.Name)
+				s.table += util.FieldEscape(f.Name)
+				bs.WriteString(s.SQLColumn(f.Type, util.FieldEscape(f.Name)))
+				field := util.FieldEscape(f.Name)
 				s.addWhere(fmt.Sprintf("%s.%s_id = %s.id", table, field, field))
 				continue
 			}
@@ -168,7 +168,7 @@ func (s *Stmt) SQLColumn(rt reflect.Type, table string) string {
 		}
 		name := f.Tag.Get("db")
 		if name == "" {
-			name = FieldEscape(f.Name)
+			name = util.FieldEscape(f.Name)
 		}
 		if !strings.Contains(name, ".") {
 			fmt.Fprintf(bs, "%s.", table)
@@ -204,8 +204,8 @@ func (s *Stmt) firstTable() string {
 
 // addRelation 添加多表关联条件
 func (s *Stmt) addRelation(t1, t2 string, id interface{}) *Stmt {
-	t1 = FieldEscape(t1)
-	t2 = FieldEscape(t2)
+	t1 = util.FieldEscape(t1)
+	t2 = util.FieldEscape(t2)
 	s.addWhere(fmt.Sprintf("id in (select %s_id from %s_%s_relation where %s_id=%d)", t1, t2, t1, t2, id))
 	return s
 }
@@ -304,7 +304,7 @@ func (s *Stmt) Query(result interface{}) error {
 			id := reflect.ValueOf(refs[idx]).Elem().Interface()
 
 			//填充一对多结果，每次去查询
-			if err = NewStmt(s.db, FieldEscape(f.Name)).addRelation(f.Name, s.firstTable(), id).Query(lr); err != nil {
+			if err = NewStmt(s.db, util.FieldEscape(f.Name)).addRelation(f.Name, s.firstTable(), id).Query(lr); err != nil {
 				if errors.Cause(err) != meta.ErrNotFound {
 					return errors.Trace(err)
 				}
@@ -369,7 +369,7 @@ func (s *Stmt) SQLInsert(rt reflect.Type, rv reflect.Value) (sql string, refs []
 		}
 		name := rt.Field(i).Tag.Get("db")
 		if name == "" {
-			name = FieldEscape(rt.Field(i).Name)
+			name = util.FieldEscape(rt.Field(i).Name)
 		}
 
 		bs.WriteString(name)
@@ -396,26 +396,6 @@ func (s *Stmt) SQLInsert(rt reflect.Type, rv reflect.Value) (sql string, refs []
 	return
 }
 
-//FieldEscape 转换为小写下划线分隔
-func FieldEscape(k string) string {
-	buf := []byte{}
-	up := true
-	for _, c := range k {
-		if unicode.IsUpper(c) {
-			if !up {
-				buf = append(buf, '_')
-			}
-			c += 32
-			up = true
-		} else {
-			up = false
-		}
-
-		buf = append(buf, byte(c))
-	}
-	return string(buf)
-}
-
 // SQLUpdate 根据条件及结构生成update sql
 func (s *Stmt) SQLUpdate(rt reflect.Type, rv reflect.Value) (sql string, refs []interface{}) {
 	bs := bytes.NewBufferString(fmt.Sprintf("update `%s` set ", s.table))
@@ -435,7 +415,7 @@ func (s *Stmt) SQLUpdate(rt reflect.Type, rv reflect.Value) (sql string, refs []
 
 		name := rt.Field(i).Tag.Get("db")
 		if name == "" {
-			name = FieldEscape(rt.Field(i).Name)
+			name = util.FieldEscape(rt.Field(i).Name)
 		}
 
 		fmt.Fprintf(bs, "`%s`=?, ", name)

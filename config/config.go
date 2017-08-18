@@ -6,9 +6,10 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"unicode"
 
 	"github.com/juju/errors"
+
+	"github.com/dearcode/crab/util"
 )
 
 var (
@@ -22,19 +23,9 @@ type Config struct {
 	kv map[string]string
 }
 
-//TrimSpace 删除头尾的空字符，空格，换行之类的东西, 具体在unicode.IsSpac.
-func TrimSpace(raw string) string {
-	s := strings.TrimLeftFunc(raw, unicode.IsSpace)
-	if s != "" {
-		s = strings.TrimRightFunc(s, unicode.IsSpace)
-	}
-	return s
-}
-
-// TrimSplit 按sep拆分，并去掉空字符.
-func TrimSplit(raw, sep string) []string {
+func configSplit(raw, sep string) []string {
 	if i := strings.Index(raw, sep); i > 0 {
-		return []string{TrimSpace(raw[:i]), TrimSpace(raw[i+1:])}
+		return []string{util.TrimSpace(raw[:i]), util.TrimSpace(raw[i+1:])}
 	}
 	return []string{raw}
 }
@@ -50,7 +41,7 @@ func NewConfig(path string) (c *Config, err error) {
 	s := ""
 
 	for _, line := range strings.Split(string(dat), "\n") {
-		line = TrimSpace(line)
+		line = util.TrimSpace(line)
 		if len(line) < 3 || line[0] == ';' || line[0] == '#' {
 			continue
 		}
@@ -60,7 +51,7 @@ func NewConfig(path string) (c *Config, err error) {
 			continue
 		}
 
-		kv := TrimSplit(line, "=")
+		kv := configSplit(line, "=")
 		if len(kv) == 2 {
 			key := makeKey(s, kv[0])
 			c.kv[key] = kv[1]
@@ -71,7 +62,7 @@ func NewConfig(path string) (c *Config, err error) {
 }
 
 func makeKey(s, k string) string {
-	return strings.ToLower(fmt.Sprintf("%s_%s", s, k))
+	return util.FieldEscape(fmt.Sprintf("%s_%s", s, k))
 }
 
 //GetData 获取指定段的指定key的值, 支持int,string.
@@ -89,7 +80,7 @@ func (c *Config) GetData(s, k string, result interface{}, d interface{}) error {
 	if !ok {
 		//没有对应的key, 这时候要看看有没有default.
 		if d == nil {
-			return errors.Trace(ErrNotFound)
+			return errors.Annotatef(ErrNotFound, "%v:%v", s, k)
 		}
 		rv.Set(reflect.ValueOf(d))
 		return nil
@@ -145,7 +136,7 @@ func LoadConfig(path string, result interface{}) error {
 	}
 
 	//去指针
-	if rt.Kind() == reflect.Ptr && rt.Elem().Kind() == reflect.Struct {
+	for rt.Kind() == reflect.Ptr {
 		rt = rt.Elem()
 		rv = rv.Elem()
 	}

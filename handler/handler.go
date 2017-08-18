@@ -23,6 +23,7 @@ type server struct {
 	put    map[string]iface
 	delete map[string]iface
 	prefix *btree.BTree
+	filter Filter
 	mu     sync.RWMutex
 }
 
@@ -33,11 +34,15 @@ func newHTTPServer() *server {
 		put:    make(map[string]iface),
 		delete: make(map[string]iface),
 		prefix: btree.New(3),
+		filter: defaultFilter,
 	}
 }
 
 // Callback 用户接口
 type Callback func(http.ResponseWriter, *http.Request)
+
+// Filter 请求过滤， 如果返回结果为nil,直接返回，不再进行后续处理.
+type Filter func(http.ResponseWriter, *http.Request) *http.Request
 
 // iface 对外服务接口
 type iface struct {
@@ -50,16 +55,21 @@ func (i *iface) Less(bi btree.Item) bool {
 	return strings.Compare(i.path, bi.(*iface).path) == 1
 }
 
-//nameToPath 类名转路径
-func (s *server) nameToPath(name string) string {
+//NameToPath 类名转路径
+func NameToPath(name string, depth int) string {
 	buf := []byte(name)
+	d := 0
+	index := 0
 	for i := range buf {
 		if buf[i] == '.' || buf[i] == '*' {
 			buf[i] = '/'
+			d++
+			if d == depth {
+				index = i
+			}
 		}
 	}
-	buf = append(buf, '/')
-	return string(buf)
+	return string(buf[index:])
 }
 
 //AddInterface 自动注册接口
@@ -74,7 +84,7 @@ func (s *server) AddInterface(iface interface{}, path string) error {
 		mt := rt.Method(i)
 		mv := rv.Method(i)
 		if path == "" {
-			path = s.nameToPath(rt.String())
+			path = NameToPath(rt.String(), 0) + "/"
 		}
 
 		switch mt.Name {
@@ -91,6 +101,13 @@ func (s *server) AddInterface(iface interface{}, path string) error {
 	}
 
 	return nil
+}
+
+//AddFilter 添加过滤函数.
+func (s *server) AddFilter(filter Filter) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.filter = filter
 }
 
 //AddHandler 注册接口
@@ -160,14 +177,24 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	i, ok := s.iface(w, r)
-	if !ok {
-		log.Errorf("handler not found, req:%+v", r)
-		SendResponse(w, http.StatusBadRequest, "invalid request")
+	nr := s.filter(w, r)
+	if nr == nil {
+		log.Debugf("%v %v %v ignore", r.RemoteAddr, r.Method, r.URL)
 		return
 	}
-	log.Debugf("URL:%v, interface:[%v %v]", r.URL, i.method, i.path)
 
-	i.call(w, r)
+	i, ok := s.iface(w, r)
+	if !ok {
+		log.Errorf("%v %v %v not found.", r.RemoteAddr, r.Method, r.URL)
+		SendResponse(w, http.StatusNotFound, "invalid request")
+		return
+	}
+	log.Debugf("%v %v %v %v", r.RemoteAddr, r.Method, r.URL, i.path)
+
+	i.call(w, nr)
 	return
+}
+
+func defaultFilter(_ http.ResponseWriter, r *http.Request) *http.Request {
+	return r
 }

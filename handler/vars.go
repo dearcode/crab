@@ -50,11 +50,11 @@ func UnmarshalForm(req *http.Request, postion VariablePostion, result interface{
 			val = req.Header.Get(key)
 		}
 
-		if val == "" {
-			continue
-		}
-
 		switch f.Type.Kind() {
+		case reflect.Bool:
+			if val != "" {
+				rv.Field(i).SetBool(true)
+			}
 		case reflect.Int, reflect.Int64:
 			vi, err := strconv.ParseInt(val, 10, 64)
 			if err != nil {
@@ -109,7 +109,7 @@ func UnmarshalValidate(req *http.Request, postion VariablePostion, result interf
 		return errors.Trace(err)
 	}
 
-	log.Debugf("request %s vars:%v", postion, result)
+	log.Debugf("request %s vars:%#v", postion, result)
 	valid := validation.Validation{}
 	_, err = valid.Valid(result)
 	return errors.Trace(err)

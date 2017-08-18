@@ -279,6 +279,9 @@ func (v *Validation) Valid(obj interface{}) (b bool, err error) {
 		case reflect.Array, reflect.Slice:
 			for si := 0; si < objV.Field(i).Len(); si++ {
 				sv := objV.Field(i).Index(si)
+				if sv.Kind() != reflect.Struct {
+					continue
+				}
 				b, err = v.Valid(sv.Interface())
 				if err != nil {
 					return b, fmt.Errorf("[]%v.%v", sv.Type().Name(), err.Error())
