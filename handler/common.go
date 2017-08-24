@@ -100,6 +100,17 @@ func SendResponseData(w http.ResponseWriter, data interface{}) {
 	w.Write(buf)
 }
 
+//SendErrorDetail 返回详细的错误信息，支持json
+func SendErrorDetail(w http.ResponseWriter, status int, data interface{}, f string, args ...interface{}) {
+	w.Header().Add("Content-Type", "application/json")
+	resp := Response{Status: status, Message: f, Data: data}
+	if len(args) > 0 {
+		resp.Message = fmt.Sprintf(f, args...)
+	}
+	buf, _ := json.Marshal(&resp)
+	w.Write(buf)
+}
+
 //SendRows 为bootstrap-talbe返回结果，根据条件查找，total是总记录数，rows是数据
 func SendRows(w http.ResponseWriter, total int64, data interface{}) {
 	var resp = struct {
