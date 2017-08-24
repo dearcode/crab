@@ -122,3 +122,10 @@ func SendRows(w http.ResponseWriter, total int64, data interface{}) {
 	buf, _ := json.Marshal(resp)
 	w.Write(buf)
 }
+
+//SendResponseOK 返回成功结果.
+func SendResponseOK(w http.ResponseWriter) {
+	w.Header().Add("Content-Type", "application/json")
+	buf, _ := json.Marshal(&Response{})
+	w.Write(buf)
+}
