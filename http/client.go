@@ -1,7 +1,7 @@
 package http
 
 import (
-	"io"
+	"bytes"
 	"io/ioutil"
 	"net"
 	nh "net/http"
@@ -39,7 +39,7 @@ func NewClient(timeout time.Duration) Client {
 	}
 }
 
-func (c Client) do(method, url string, headers map[string]string, body io.ReadCloser) ([]byte, int, error) {
+func (c Client) do(method, url string, headers map[string]string, body *bytes.Buffer) ([]byte, int, error) {
 	req, err := nh.NewRequest(method, url, body)
 	if err != nil {
 		return nil, nh.StatusInternalServerError, err
@@ -63,21 +63,21 @@ func (c Client) do(method, url string, headers map[string]string, body io.ReadCl
 }
 
 //Get get 请求...
-func (c Client) Get(url string, headers map[string]string, body io.ReadCloser) ([]byte, int, error) {
+func (c Client) Get(url string, headers map[string]string, body *bytes.Buffer) ([]byte, int, error) {
 	return c.do("GET", url, headers, body)
 }
 
 //POST post 请求.
-func (c Client) POST(url string, headers map[string]string, body io.ReadCloser) ([]byte, int, error) {
+func (c Client) POST(url string, headers map[string]string, body *bytes.Buffer) ([]byte, int, error) {
 	return c.do("POST", url, headers, body)
 }
 
 //PUT put 请求.
-func (c Client) PUT(url string, headers map[string]string, body io.ReadCloser) ([]byte, int, error) {
+func (c Client) PUT(url string, headers map[string]string, body *bytes.Buffer) ([]byte, int, error) {
 	return c.do("PUT", url, headers, body)
 }
 
 //DELETE delete 请求.
-func (c Client) DELETE(url string, headers map[string]string, body io.ReadCloser) ([]byte, int, error) {
+func (c Client) DELETE(url string, headers map[string]string, body *bytes.Buffer) ([]byte, int, error) {
 	return c.do("DELETE", url, headers, body)
 }
