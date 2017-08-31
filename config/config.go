@@ -8,8 +8,6 @@ import (
 	"strings"
 
 	"github.com/juju/errors"
-
-	"github.com/dearcode/crab/util"
 )
 
 var (
@@ -25,7 +23,7 @@ type Config struct {
 
 func configSplit(raw, sep string) []string {
 	if i := strings.Index(raw, sep); i > 0 {
-		return []string{util.TrimSpace(raw[:i]), util.TrimSpace(raw[i+1:])}
+		return []string{strings.TrimSpace(raw[:i]), strings.TrimSpace(raw[i+1:])}
 	}
 	return []string{raw}
 }
@@ -41,7 +39,7 @@ func NewConfig(path string) (c *Config, err error) {
 	s := ""
 
 	for _, line := range strings.Split(string(dat), "\n") {
-		line = util.TrimSpace(line)
+		line = strings.TrimSpace(line)
 		if len(line) < 3 || line[0] == ';' || line[0] == '#' {
 			continue
 		}
@@ -62,7 +60,7 @@ func NewConfig(path string) (c *Config, err error) {
 }
 
 func makeKey(s, k string) string {
-	return util.FieldEscape(fmt.Sprintf("%s_%s", s, k))
+	return strings.ToLower(strings.TrimSpace(s) + "/" + strings.TrimSpace(k))
 }
 
 //GetData 获取指定段的指定key的值, 支持int,string.
@@ -80,6 +78,7 @@ func (c *Config) GetData(s, k string, result interface{}, d interface{}) error {
 	if !ok {
 		//没有对应的key, 这时候要看看有没有default.
 		if d == nil {
+			fmt.Printf("kv:%#v, key:%v\n", c.kv, key)
 			return errors.Annotatef(ErrNotFound, "%v:%v", s, k)
 		}
 		rv.Set(reflect.ValueOf(d))

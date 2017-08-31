@@ -68,20 +68,11 @@ func pkcs5UnPadding(origData []byte) ([]byte, error) {
 	return origData[:(length - unpadding)], nil
 }
 
-//TrimSpace 删除头尾的空字符，空格，换行之类的东西, 具体在unicode.IsSpac.
-func TrimSpace(raw string) string {
-	s := strings.TrimLeftFunc(raw, unicode.IsSpace)
-	if s != "" {
-		s = strings.TrimRightFunc(s, unicode.IsSpace)
-	}
-	return s
-}
-
 // TrimSplit 按sep拆分，并去掉空字符.
 func TrimSplit(raw, sep string) []string {
 	var ss []string
 	for _, val := range strings.Split(raw, sep) {
-		if s := TrimSpace(val); s != "" {
+		if s := strings.TrimSpace(val); s != "" {
 			ss = append(ss, s)
 		}
 	}
