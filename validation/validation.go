@@ -275,6 +275,10 @@ func (v *Validation) Valid(obj interface{}) (b bool, err error) {
 	}
 
 	for i := 0; i < objT.NumField(); i++ {
+		tag := objT.Field(i).Tag.Get("valid")
+		if tag == "" {
+			continue
+		}
 		switch objT.Field(i).Type.Kind() {
 		case reflect.Array, reflect.Slice:
 			for si := 0; si < objV.Field(i).Len(); si++ {
