@@ -1,10 +1,10 @@
-package http
+package client
 
 import (
 	"bytes"
 	"io/ioutil"
 	"net"
-	nh "net/http"
+	"net/http"
 	"time"
 
 	"github.com/juju/errors"
@@ -13,14 +13,14 @@ import (
 
 //Client 对http client简单封装.
 type Client struct {
-	hc nh.Client
+	hc http.Client
 }
 
 //NewClient 创建一个带超时控制的http client.
 func NewClient(timeout time.Duration) Client {
 	return Client{
-		hc: nh.Client{
-			Transport: &nh.Transport{
+		hc: http.Client{
+			Transport: &http.Transport{
 				Dial: func(netw, addr string) (net.Conn, error) {
 					c, err := net.DialTimeout(netw, addr, timeout)
 					if err != nil {
@@ -40,9 +40,18 @@ func NewClient(timeout time.Duration) Client {
 }
 
 func (c Client) do(method, url string, headers map[string]string, body *bytes.Buffer) ([]byte, int, error) {
-	req, err := nh.NewRequest(method, url, body)
+	var req *http.Request
+	var err error
+
+	//参数body就个指向结构体的指针(*bytes.Buffer)，NewRequest的body参数是一个接口(io.Reader)
+	if body == nil {
+		req, err = http.NewRequest(method, url, nil)
+	} else {
+		req, err = http.NewRequest(method, url, body)
+	}
+
 	if err != nil {
-		return nil, nh.StatusInternalServerError, err
+		return nil, http.StatusInternalServerError, err
 	}
 
 	for k, v := range headers {
@@ -59,6 +68,7 @@ func (c Client) do(method, url string, headers map[string]string, body *bytes.Bu
 	if err != nil {
 		return nil, 0, errors.Trace(err)
 	}
+
 	return data, resp.StatusCode, nil
 }
 
