@@ -5,12 +5,10 @@ import (
 )
 
 func init() {
-	handler.Server.AddHandler(handler.GET, "/", true, onStaticGet)
-	handler.Server.AddHandler(handler.GET, "/debug/", true, onDebugGet)
+	handler.Server.AddInterface(&staticServer{}, "/", true)
+	handler.Server.AddInterface(&debugServer{}, "/debug/", true)
 
-	handler.Server.AddHandler(handler.GET, "/test/", false, onTestGet)
-	handler.Server.AddHandler(handler.POST, "/test/", false, onTestPost)
-	handler.Server.AddHandler(handler.DELETE, "/test/", false, onTestDelete)
+	handler.Server.AddInterface(&testServer{}, "/test/", false)
 
-	handler.Server.AddInterface(&user{}, "")
+	handler.Server.AddInterface(&user{}, "", false)
 }

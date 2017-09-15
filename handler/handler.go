@@ -18,10 +18,7 @@ var (
 )
 
 type server struct {
-	post   map[string]iface
-	get    map[string]iface
-	put    map[string]iface
-	delete map[string]iface
+	path   map[string]iface
 	prefix *btree.BTree
 	filter Filter
 	mu     sync.RWMutex
@@ -29,26 +26,19 @@ type server struct {
 
 func newHTTPServer() *server {
 	return &server{
-		post:   make(map[string]iface),
-		get:    make(map[string]iface),
-		put:    make(map[string]iface),
-		delete: make(map[string]iface),
+		path:   make(map[string]iface),
 		prefix: btree.New(3),
 		filter: defaultFilter,
 	}
 }
 
-// Callback 用户接口
-type Callback func(http.ResponseWriter, *http.Request)
-
 // Filter 请求过滤， 如果返回结果为nil,直接返回，不再进行后续处理.
 type Filter func(http.ResponseWriter, *http.Request) *http.Request
 
-// iface 对外服务接口
+// iface 对外服务接口, path格式：Method/URI
 type iface struct {
-	method Method
 	path   string
-	call   Callback
+	source reflect.Type
 }
 
 func (i *iface) Less(bi btree.Item) bool {
@@ -73,31 +63,59 @@ func NameToPath(name string, depth int) string {
 }
 
 //AddInterface 自动注册接口
-//只要struct实现了DoGet(),DoPost(),DoDelete(),DoPut()接口就可以自动注册
-func (s *server) AddInterface(iface interface{}, path string) error {
-	rt := reflect.TypeOf(iface)
+//只要struct实现了Get(),Post(),Delete(),Put()接口就可以自动注册
+func (s *server) AddInterface(obj interface{}, path string, isPrefix bool) error {
+	rt := reflect.TypeOf(obj)
 	if rt.Kind() != reflect.Ptr {
 		return fmt.Errorf("need ptr")
 	}
-	rv := reflect.ValueOf(iface)
+
+	if path == "" {
+		path = NameToPath(rt.String(), 0) + "/"
+	}
+
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	rv := reflect.ValueOf(obj)
 	for i := 0; i < rv.NumMethod(); i++ {
-		mt := rt.Method(i)
-		mv := rv.Method(i)
-		if path == "" {
-			path = NameToPath(rt.String(), 0) + "/"
+		method := rt.Method(i).Name
+        log.Debugf("rt:%v, %d, method:%v", rt, i, method)
+		switch method {
+		case POST.String():
+		case GET.String():
+		case PUT.String():
+		case DELETE.String():
+		default:
+			log.Debugf("ignore method:%v path:%v", method, path)
+			continue
 		}
 
-		switch mt.Name {
-		case "DoPost":
-			s.AddHandler(POST, path, false, mv.Interface().(func(http.ResponseWriter, *http.Request)))
-		case "DoGet":
-			s.AddHandler(GET, path, false, mv.Interface().(func(http.ResponseWriter, *http.Request)))
-		case "DoPut":
-			s.AddHandler(PUT, path, false, mv.Interface().(func(http.ResponseWriter, *http.Request)))
-		case "DoDelete":
-			s.AddHandler(DELETE, path, false, mv.Interface().(func(http.ResponseWriter, *http.Request)))
+		ifc := iface{
+			path:   fmt.Sprintf("%v%v", method, path),
+			source: rt.Elem(),
 		}
-		log.Debugf("%v %v", mt.Name, path)
+
+		//前缀匹配
+		if isPrefix {
+			if s.prefix.Has(&ifc) {
+				panic(fmt.Sprintf("exist url:%v %v", method, path))
+			}
+			s.prefix.ReplaceOrInsert(&ifc)
+            log.Debugf("add prefix:%v", path)
+			continue
+		}
+
+		//全路径匹配
+		if _, ok := s.path[ifc.path]; ok {
+			panic(fmt.Sprintf("exist url:%v %v", method, path))
+		}
+
+		s.path[ifc.path] = ifc
 	}
 
 	return nil
@@ -110,60 +128,26 @@ func (s *server) AddFilter(filter Filter) {
 	s.filter = filter
 }
 
-//AddHandler 注册接口
-func (s *server) AddHandler(method Method, path string, isPrefix bool, call Callback) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	i := iface{method, path, call}
-	if isPrefix {
-		s.prefix.ReplaceOrInsert(&i)
-	}
-
-	var ms map[string]iface
-	switch method {
-	case GET:
-		ms = s.get
-	case POST:
-		ms = s.post
-	case PUT:
-		ms = s.put
-	case DELETE:
-		ms = s.delete
-	}
-
-	if _, ok := ms[path]; ok {
-		panic(fmt.Sprintf("exist url:%v %v", method, path))
-	}
-
-	ms[path] = i
-}
-
 func (s *server) iface(w http.ResponseWriter, r *http.Request) (i iface, ok bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	switch r.Method {
-	case "GET":
-		i, ok = s.get[r.URL.Path]
-	case "POST":
-		i, ok = s.post[r.URL.Path]
-	case "PUT":
-		i, ok = s.put[r.URL.Path]
-	case "DELETE":
-		i, ok = s.delete[r.URL.Path]
-	}
+	path := r.Method + r.URL.Path
 
-	if ok {
+	if i, ok = s.path[path]; ok {
+		log.Debugf("find path:%v", path)
 		return
 	}
 
 	//如果完全匹配没找到，再找前缀的
-	s.prefix.AscendGreaterOrEqual(&iface{path: r.URL.Path}, func(item btree.Item) bool {
+	s.prefix.AscendGreaterOrEqual(&iface{path: path}, func(item btree.Item) bool {
 		i = *(item.(*iface))
-		ok = strings.HasPrefix(r.URL.Path, i.path)
+		ok = strings.HasPrefix(path, i.path)
+        log.Debugf("path:%v, ipath:%v, ok:%v", path, i.path, ok)
 		return !ok
 	})
+
+	log.Debugf("find prefix:%v, ok:%v", path, ok)
 	return
 }
 
@@ -189,9 +173,23 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		SendResponse(w, http.StatusNotFound, "invalid request")
 		return
 	}
+
 	log.Debugf("%v %v %v %v", r.RemoteAddr, r.Method, r.URL, i.path)
 
-	i.call(w, nr)
+    for j:=0; j<10; j++ {
+        fmt.Printf("========%p\n", reflect.New(i.source).Interface())
+        log.Debugf("new:%p",  reflect.New(i.source).Interface())
+    }
+
+    newObj := reflect.New(i.source)
+    fmt.Printf("obj:%p\n", newObj)
+    method := newObj.MethodByName(r.Method)
+    callback := method.Interface().(func(http.ResponseWriter, *http.Request))
+
+//	callback := .MethodByName(r.Method).Interface()
+
+	callback(w, nr)
+
 	return
 }
 
