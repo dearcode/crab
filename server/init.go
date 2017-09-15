@@ -1,14 +1,14 @@
 package server
 
 import (
-	"github.com/dearcode/crab/handler"
+	"github.com/dearcode/crab/http/server"
 )
 
 func init() {
-	handler.Server.AddInterface(&staticServer{}, "/", true)
-	handler.Server.AddInterface(&debugServer{}, "/debug/", true)
+	server.AddInterface(&staticServer{}, "/", true)
+	server.AddInterface(&debugServer{}, "/debug/", true)
 
-	handler.Server.AddInterface(&testServer{}, "/test/", false)
+	server.AddInterface(&testServer{}, "/test/", false)
 
-	handler.Server.AddInterface(&user{}, "", false)
+	server.AddInterface(&user{}, "", false)
 }

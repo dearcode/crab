@@ -6,22 +6,17 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/dearcode/crab/handler"
+	"github.com/dearcode/crab/http/server"
 	_ "github.com/dearcode/crab/server"
 )
 
 type index struct {
-    r *http.Request
-}
-
-func test(r *http.Request) {
-  fmt.Printf("%v\n",    r.RemoteAddr)
+	r *http.Request
 }
 
 func (i *index) GET(w http.ResponseWriter, req *http.Request) {
-	fmt.Printf("index:%p\n", i)
-    test(req)
-	w.Write([]byte("ok"))
+	i.r = req
+	w.Write([]byte(fmt.Sprintf("client:%v addr:%p", i.r.RemoteAddr, i)))
 }
 
 func main() {
@@ -33,9 +28,8 @@ func main() {
 		panic(err.Error())
 	}
 
-	handler.Server.AddInterface(&index{}, "/index", false)
-
-	if err = http.Serve(ln, handler.Server); err != nil {
+	server.AddInterface(&index{}, "/index", false)
+	if err = server.Start(ln); err != nil {
 		panic(err.Error())
 	}
 }
