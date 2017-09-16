@@ -64,9 +64,22 @@ func NameToPath(name string, depth int) string {
 	return string(buf[index:])
 }
 
-//AddInterface 自动注册接口
-//只要struct实现了Get(),Post(),Delete(),Put()接口就可以自动注册
-func AddInterface(obj interface{}, path string, isPrefix bool) error {
+//Register 只要struct实现了Get(),Post(),Delete(),Put()接口就可以自动注册
+func Register(obj interface{}) error {
+	return register(obj, "", false)
+}
+
+//RegisterPrefix 注册url前缀.
+func RegisterPrefix(obj interface{}, path string) error {
+	return register(obj, path, true)
+}
+
+//RegisterPath 注册url完全匹配.
+func RegisterPath(obj interface{}, path string) error {
+	return register(obj, path, true)
+}
+
+func register(obj interface{}, path string, isPrefix bool) error {
 	rt := reflect.TypeOf(obj)
 	if rt.Kind() != reflect.Ptr {
 		return fmt.Errorf("need ptr")
@@ -177,7 +190,7 @@ func (s *httpServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Debugf("%v %v %v %v", r.RemoteAddr, r.Method, r.URL, i.path)
+	log.Debugf("%v %v %v %v", r.RemoteAddr, r.Method, r.URL, i.source)
 
 	callback := reflect.New(i.source).MethodByName(r.Method).Interface().(func(http.ResponseWriter, *http.Request))
 	callback(w, nr)

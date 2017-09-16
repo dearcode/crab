@@ -5,10 +5,10 @@ import (
 )
 
 func init() {
-	server.AddInterface(&staticServer{}, "/", true)
-	server.AddInterface(&debugServer{}, "/debug/", true)
+	server.RegisterPrefix(&staticServer{}, "/")
+	server.RegisterPrefix(&debugServer{}, "/debug/")
 
-	server.AddInterface(&testServer{}, "/test/", false)
+	server.RegisterPath(&testServer{}, "/test/")
 
-	server.AddInterface(&user{}, "", false)
+	server.Register(&user{})
 }

@@ -21,7 +21,7 @@ func (i *index) GET(w http.ResponseWriter, req *http.Request) {
 }
 
 func testHTTPClient() {
-	url := "http://127.0.0.1:9000/index"
+	url := "http://127.0.0.1:9000/main/index/"
 	buf, _, err := client.New(time.Second).Get(url, nil, nil)
 	if err != nil {
 		panic(err.Error())
@@ -33,7 +33,7 @@ func main() {
 	addr := flag.String("h", ":9000", "api listen address")
 	flag.Parse()
 
-	server.AddInterface(&index{}, "/index", false)
+	server.Register(&index{})
 
 	go func() {
 		for i := 0; i < 5; i++ {
