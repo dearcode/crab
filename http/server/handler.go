@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/google/btree"
+	"github.com/juju/errors"
 	"github.com/zssky/log"
 )
 
@@ -24,9 +25,10 @@ type iface struct {
 }
 
 type httpServer struct {
-	path   map[string]iface
-	prefix *btree.BTree
-	filter Filter
+	path     map[string]iface
+	prefix   *btree.BTree
+	filter   Filter
+	listener net.Listener
 	sync.RWMutex
 }
 
@@ -84,14 +86,14 @@ func AddInterface(obj interface{}, path string, isPrefix bool) error {
 	rv := reflect.ValueOf(obj)
 	for i := 0; i < rv.NumMethod(); i++ {
 		method := rt.Method(i).Name
-		log.Debugf("rt:%v, %d, method:%v", rt, i, method)
+		//log.Debugf("rt:%v, %d, method:%v", rt, i, method)
 		switch method {
 		case POST.String():
 		case GET.String():
 		case PUT.String():
 		case DELETE.String():
 		default:
-			log.Debugf("ignore method:%v path:%v", method, path)
+			log.Warnf("ignore %v %v %v", method, path, rt)
 			continue
 		}
 
@@ -106,7 +108,7 @@ func AddInterface(obj interface{}, path string, isPrefix bool) error {
 				panic(fmt.Sprintf("exist url:%v %v", method, path))
 			}
 			server.prefix.ReplaceOrInsert(&ifc)
-			log.Debugf("add prefix:%v", path)
+			log.Infof("add prefix %v %v %v", method, path, rt)
 			continue
 		}
 
@@ -116,6 +118,7 @@ func AddInterface(obj interface{}, path string, isPrefix bool) error {
 		}
 
 		server.path[ifc.path] = ifc
+		log.Infof("add path %v %v %v", method, path, rt)
 	}
 
 	return nil
@@ -187,6 +190,23 @@ func defaultFilter(_ http.ResponseWriter, r *http.Request) *http.Request {
 }
 
 //Start 启动httpServer.
-func Start(l net.Listener) error {
-	return http.Serve(l, server)
+func Start(addr string) error {
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		return errors.Trace(err)
+	}
+
+	server.Lock()
+	server.listener = ln
+	server.Unlock()
+
+	return http.Serve(ln, server)
+}
+
+//Stop 停止httpServer监听, 进行中的任务并不会因此而停止.
+func Stop() error {
+	server.Lock()
+	defer server.Unlock()
+
+	return server.listener.Close()
 }
