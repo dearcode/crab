@@ -135,7 +135,7 @@ func (s *server) iface(w http.ResponseWriter, r *http.Request) (i iface, ok bool
 	path := r.Method + r.URL.Path
 
 	if i, ok = s.path[path]; ok {
-		log.Debugf("find path:%v", path)
+		//log.Debugf("find path:%v", path)
 		return
 	}
 
@@ -143,11 +143,11 @@ func (s *server) iface(w http.ResponseWriter, r *http.Request) (i iface, ok bool
 	s.prefix.AscendGreaterOrEqual(&iface{path: path}, func(item btree.Item) bool {
 		i = *(item.(*iface))
 		ok = strings.HasPrefix(path, i.path)
-        log.Debugf("path:%v, ipath:%v, ok:%v", path, i.path, ok)
+       // log.Debugf("path:%v, ipath:%v, ok:%v", path, i.path, ok)
 		return !ok
 	})
 
-	log.Debugf("find prefix:%v, ok:%v", path, ok)
+//	log.Debugf("find prefix:%v, ok:%v", path, ok)
 	return
 }
 
@@ -176,18 +176,7 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	log.Debugf("%v %v %v %v", r.RemoteAddr, r.Method, r.URL, i.path)
 
-    for j:=0; j<10; j++ {
-        fmt.Printf("========%p\n", reflect.New(i.source).Interface())
-        log.Debugf("new:%p",  reflect.New(i.source).Interface())
-    }
-
-    newObj := reflect.New(i.source)
-    fmt.Printf("obj:%p\n", newObj)
-    method := newObj.MethodByName(r.Method)
-    callback := method.Interface().(func(http.ResponseWriter, *http.Request))
-
-//	callback := .MethodByName(r.Method).Interface()
-
+    callback := reflect.New(i.source).MethodByName(r.Method).Interface().(func(http.ResponseWriter, *http.Request))
 	callback(w, nr)
 
 	return

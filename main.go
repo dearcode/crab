@@ -5,20 +5,23 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"time"
 
 	"github.com/dearcode/crab/handler"
 	_ "github.com/dearcode/crab/server"
 )
 
 type index struct {
+    r *http.Request
+}
+
+func test(r *http.Request) {
+  fmt.Printf("%v\n",    r.RemoteAddr)
 }
 
 func (i *index) GET(w http.ResponseWriter, req *http.Request) {
 	fmt.Printf("index:%p\n", i)
+    test(req)
 	w.Write([]byte("ok"))
-    time.Sleep(time.Minute)
-
 }
 
 func main() {

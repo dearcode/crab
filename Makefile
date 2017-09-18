@@ -24,7 +24,7 @@ fmt:
 
 
 crab:
-	go build -gcflags="-N -l"  -o bin/$@ -ldflags '$(LDFLAGS)' ./main.go
+	go build -o bin/$@ -ldflags '$(LDFLAGS)' ./main.go
 
 
 test:
