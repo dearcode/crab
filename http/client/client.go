@@ -1,4 +1,4 @@
-package httpClient
+package client
 
 import (
 	"bytes"
@@ -11,14 +11,13 @@ import (
 	"github.com/zssky/log"
 )
 
-//Client 对http client简单封装.
-type Client struct {
+type httpClient struct {
 	hc http.Client
 }
 
 //NewClient 创建一个带超时控制的http client.
-func NewClient(timeout time.Duration) Client {
-	return Client{
+func New(timeout time.Duration) httpClient {
+	return httpClient{
 		hc: http.Client{
 			Transport: &http.Transport{
 				Dial: func(netw, addr string) (net.Conn, error) {
@@ -39,7 +38,7 @@ func NewClient(timeout time.Duration) Client {
 	}
 }
 
-func (c Client) do(method, url string, headers map[string]string, body *bytes.Buffer) ([]byte, int, error) {
+func (c httpClient) do(method, url string, headers map[string]string, body *bytes.Buffer) ([]byte, int, error) {
 	var req *http.Request
 	var err error
 
@@ -72,22 +71,18 @@ func (c Client) do(method, url string, headers map[string]string, body *bytes.Bu
 	return data, resp.StatusCode, nil
 }
 
-//Get get 请求...
-func (c Client) Get(url string, headers map[string]string, body *bytes.Buffer) ([]byte, int, error) {
+func (c httpClient) Get(url string, headers map[string]string, body *bytes.Buffer) ([]byte, int, error) {
 	return c.do("GET", url, headers, body)
 }
 
-//POST post 请求.
-func (c Client) POST(url string, headers map[string]string, body *bytes.Buffer) ([]byte, int, error) {
+func (c httpClient) POST(url string, headers map[string]string, body *bytes.Buffer) ([]byte, int, error) {
 	return c.do("POST", url, headers, body)
 }
 
-//PUT put 请求.
-func (c Client) PUT(url string, headers map[string]string, body *bytes.Buffer) ([]byte, int, error) {
+func (c httpClient) PUT(url string, headers map[string]string, body *bytes.Buffer) ([]byte, int, error) {
 	return c.do("PUT", url, headers, body)
 }
 
-//DELETE delete 请求.
-func (c Client) DELETE(url string, headers map[string]string, body *bytes.Buffer) ([]byte, int, error) {
+func (c httpClient) DELETE(url string, headers map[string]string, body *bytes.Buffer) ([]byte, int, error) {
 	return c.do("DELETE", url, headers, body)
 }
