@@ -112,14 +112,21 @@ func SendErrorDetail(w http.ResponseWriter, status int, data interface{}, f stri
 }
 
 //SendRows 为bootstrap-talbe返回结果，根据条件查找，total是总记录数，rows是数据
-func SendRows(w http.ResponseWriter, total int64, data interface{}) {
+func SendRows(w http.ResponseWriter, total interface{}, data interface{}) {
 	var resp = struct {
-		Total int64       `json:"total"`
+		Total interface{} `json:"total"`
 		Rows  interface{} `json:"rows"`
 	}{total, data}
 
 	w.Header().Add("Content-Type", "application/json")
 	buf, _ := json.Marshal(resp)
+	w.Write(buf)
+}
+
+//SendData 为bootstrap-talbe客户端分页返回结果.
+func SendData(w http.ResponseWriter, data interface{}) {
+	w.Header().Add("Content-Type", "application/json")
+	buf, _ := json.Marshal(data)
 	w.Write(buf)
 }
 
