@@ -2,6 +2,7 @@ package client
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -12,13 +13,22 @@ import (
 )
 
 type httpClient struct {
-	hc http.Client
+	client http.Client
 }
 
-//NewClient 创建一个带超时控制的http client.
-func New(timeout time.Duration) httpClient {
+type StatusError struct {
+	Code int
+}
+
+func (se *StatusError) Error() string {
+	return fmt.Sprintf("HTTP Status %v", se.Code)
+}
+
+//NewClient 创建一个带超时控制的http client, 单位秒.
+func New(ts int) httpClient {
+	timeout := time.Duration(ts) * time.Second
 	return httpClient{
-		hc: http.Client{
+		client: http.Client{
 			Transport: &http.Transport{
 				Dial: func(netw, addr string) (net.Conn, error) {
 					c, err := net.DialTimeout(netw, addr, timeout)
@@ -38,51 +48,46 @@ func New(timeout time.Duration) httpClient {
 	}
 }
 
-func (c httpClient) do(method, url string, headers map[string]string, body *bytes.Buffer) ([]byte, int, error) {
-	var req *http.Request
-	var err error
-
-	//参数body就个指向结构体的指针(*bytes.Buffer)，NewRequest的body参数是一个接口(io.Reader)
-	if body == nil {
-		req, err = http.NewRequest(method, url, nil)
-	} else {
-		req, err = http.NewRequest(method, url, body)
-	}
-
+func (c httpClient) do(method, url string, headers map[string]string, body []byte) ([]byte, error) {
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(body))
 	if err != nil {
-		return nil, http.StatusInternalServerError, err
+		return nil, errors.Trace(err)
 	}
 
 	for k, v := range headers {
 		req.Header.Set(k, v)
 	}
 
-	resp, err := c.hc.Do(req)
+	resp, err := c.client.Do(req)
 	if err != nil {
-		return nil, 0, errors.Trace(err)
+		return nil, errors.Trace(err)
 	}
 	defer resp.Body.Close()
 
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, 0, errors.Trace(err)
+		return nil, errors.Trace(err)
 	}
 
-	return data, resp.StatusCode, nil
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.Trace(&StatusError{resp.StatusCode})
+	}
+
+	return data, nil
 }
 
-func (c httpClient) Get(url string, headers map[string]string, body *bytes.Buffer) ([]byte, int, error) {
+func (c httpClient) Get(url string, headers map[string]string, body []byte) ([]byte, error) {
 	return c.do("GET", url, headers, body)
 }
 
-func (c httpClient) POST(url string, headers map[string]string, body *bytes.Buffer) ([]byte, int, error) {
+func (c httpClient) POST(url string, headers map[string]string, body []byte) ([]byte, error) {
 	return c.do("POST", url, headers, body)
 }
 
-func (c httpClient) PUT(url string, headers map[string]string, body *bytes.Buffer) ([]byte, int, error) {
+func (c httpClient) PUT(url string, headers map[string]string, body []byte) ([]byte, error) {
 	return c.do("PUT", url, headers, body)
 }
 
-func (c httpClient) DELETE(url string, headers map[string]string, body *bytes.Buffer) ([]byte, int, error) {
+func (c httpClient) DELETE(url string, headers map[string]string, body []byte) ([]byte, error) {
 	return c.do("DELETE", url, headers, body)
 }
