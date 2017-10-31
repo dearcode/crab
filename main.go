@@ -11,6 +11,13 @@ import (
 	_ "github.com/dearcode/crab/server"
 )
 
+type regexpTest struct {
+}
+
+func (rt *regexpTest) GET(w http.ResponseWriter, req *http.Request) {
+	fmt.Fprintf(w, "%#v", req.Context())
+}
+
 type index struct {
 	r *http.Request
 }
@@ -34,6 +41,7 @@ func main() {
 	flag.Parse()
 
 	server.Register(&index{})
+	server.RegisterPrefix(&regexpTest{}, "/regexp/{user}/test/")
 
 	go func() {
 		for i := 0; i < 5; i++ {

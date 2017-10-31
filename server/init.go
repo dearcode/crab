@@ -8,7 +8,7 @@ func init() {
 	server.RegisterPrefix(&staticServer{}, "/")
 	server.RegisterPrefix(&debugServer{}, "/debug/")
 
-	server.RegisterPath(&testServer{}, "/test/")
+	server.RegisterPrefix(&testServer{}, "/test/")
 
 	server.Register(&user{})
 }
