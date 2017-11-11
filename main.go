@@ -36,12 +36,18 @@ func testHTTPClient() {
 	fmt.Printf("response:%s\n", buf)
 }
 
+func testHandler(w http.ResponseWriter, req *http.Request) {
+	fmt.Fprintf(w, "testHandler:%v", req.RemoteAddr)
+}
+
 func main() {
 	addr := flag.String("h", ":9000", "api listen address")
 	flag.Parse()
 
 	server.Register(&index{})
 	server.RegisterPrefix(&regexpTest{}, "/regexp/{user}/test/")
+
+	server.RegisterHandler(testHandler, "GET", "/testHandler/")
 
 	go func() {
 		for i := 0; i < 5; i++ {

@@ -20,26 +20,25 @@ var (
 	server = newHTTPServer()
 )
 
-type uriRegexp struct {
-	path   string
-	keys   []string
-	exp    *regexp.Regexp
-	source reflect.Type
+type handlerRegexp struct {
+	keys []string
+	exp  *regexp.Regexp
+	handler
 }
 
-// iface 对外服务接口, path格式：Method/URI
-type iface struct {
-	path   string
-	source reflect.Type
+// handler 对外服务接口, path格式：Method/URI
+type handler struct {
+	path string
+	call func(http.ResponseWriter, *http.Request)
 }
 
 type prefix struct {
-	path    string
-	uriExps []uriRegexp
+	path string
+	exps []handlerRegexp
 }
 
 type httpServer struct {
-	path     map[string]iface
+	path     map[string]handler
 	prefix   *btree.BTree
 	filter   Filter
 	listener net.Listener
@@ -48,7 +47,7 @@ type httpServer struct {
 
 func newHTTPServer() *httpServer {
 	return &httpServer{
-		path:   make(map[string]iface),
+		path:   make(map[string]handler),
 		prefix: btree.New(3),
 		filter: defaultFilter,
 	}
@@ -83,6 +82,32 @@ func Register(obj interface{}) error {
 	return register(obj, "", false)
 }
 
+//RegisterPath 注册url完全匹配.
+func RegisterPath(obj interface{}, path string) error {
+	return register(obj, path, false)
+}
+
+//RegisterHandler 注册自定义url完全匹配.
+func RegisterHandler(call func(http.ResponseWriter, *http.Request), method, path string) error {
+	h := handler{
+		path: fmt.Sprintf("%v%v", method, path),
+		call: call,
+	}
+
+	server.Lock()
+	defer server.Unlock()
+
+	if _, ok := server.path[h.path]; ok {
+		return errors.Errorf("exist url:%v %v", method, path)
+	}
+
+	server.path[h.path] = h
+
+	log.Infof("add handler %v %v", method, path)
+
+	return nil
+}
+
 //RegisterPrefix 注册url前缀.
 func RegisterPrefix(obj interface{}, path string) error {
 	return register(obj, path, true)
@@ -100,28 +125,22 @@ func init() {
 	keysExp = exp
 }
 
-func newURIRegexp(path string, source reflect.Type) uriRegexp {
-	ur := uriRegexp{
-		path:   path,
-		source: source,
+func newHandlerRegexp(h handler) handlerRegexp {
+	hr := handlerRegexp{handler: h}
+
+	for _, m := range keysExp.FindAllStringSubmatch(hr.path, -1) {
+		hr.keys = append(hr.keys, m[1])
 	}
 
-	//log.Debugf("path:%v", path)
-	for _, m := range keysExp.FindAllStringSubmatch(path, -1) {
-		//log.Debugf("path:%v, key:%#v", path, m)
-		ur.keys = append(ur.keys, m[1])
-	}
-
-	np := keysExp.ReplaceAllString(path, "(.+)")
+	np := keysExp.ReplaceAllString(hr.path, "(.+)")
 	exp, err := regexp.Compile(np)
 	if err != nil {
 		panic(err.Error())
 	}
-	ur.exp = exp
 
-	//	log.Debugf("uriRegexp:%#v", ur)
+	hr.exp = exp
 
-	return ur
+	return hr
 }
 
 func register(obj interface{}, path string, isPrefix bool) error {
@@ -146,13 +165,24 @@ func register(obj interface{}, path string, isPrefix bool) error {
 		method := rt.Method(i).Name
 		//log.Debugf("rt:%v, %d, method:%v", rt, i, method)
 		switch method {
-		case POST.String():
-		case GET.String():
-		case PUT.String():
-		case DELETE.String():
+		case http.MethodPost:
+		case http.MethodGet:
+		case http.MethodPut:
+		case http.MethodDelete:
 		default:
-			log.Warnf("ignore %v %v %v", method, path, rt)
+			log.Warnf("ignore func:%v %v %v", method, path, rt)
 			continue
+		}
+
+		mt := rv.MethodByName(method)
+		if mt.Type().NumIn() != 2 || mt.Type().In(0).String() != "http.ResponseWriter" || mt.Type().In(1).String() != "*http.Request" {
+			log.Debugf("ignore func:%v %v %v", method, path, mt.Type())
+			continue
+		}
+
+		h := handler{
+			path: fmt.Sprintf("%v%v", method, path),
+			call: mt.Interface().(func(http.ResponseWriter, *http.Request)),
 		}
 
 		//前缀匹配
@@ -166,32 +196,26 @@ func register(obj interface{}, path string, isPrefix bool) error {
 			}
 
 			//	log.Debugf("path:%v", p.path)
-
 			if server.prefix.Has(&p) {
 				p = *(server.prefix.Get(&p).(*prefix))
 			}
 
-			exp := newURIRegexp(path, rt.Elem())
+			exp := newHandlerRegexp(h)
 
-			p.uriExps = append(p.uriExps, exp)
+			p.exps = append(p.exps, exp)
 
 			server.prefix.ReplaceOrInsert(&p)
 
 			log.Infof("add prefix %v %v %v %v", method, exp.path, exp.keys, rt)
-
 			continue
 		}
 
-		ifc := iface{
-			path:   fmt.Sprintf("%v%v", method, path),
-			source: rt.Elem(),
-		}
 		//全路径匹配
-		if _, ok := server.path[ifc.path]; ok {
-			panic(fmt.Sprintf("exist url:%v %v", method, path))
+		if _, ok := server.path[h.path]; ok {
+			return errors.Errorf("exist url:%v %v", method, path)
 		}
 
-		server.path[ifc.path] = ifc
+		server.path[h.path] = h
 		log.Infof("add path %v %v %v", method, path, rt)
 	}
 
@@ -205,7 +229,7 @@ func AddFilter(filter Filter) {
 	server.filter = filter
 }
 
-func parseRequestValues(path string, ur uriRegexp) context.Context {
+func parseRequestValues(path string, ur handlerRegexp) context.Context {
 	ctx := context.Background()
 	for i, v := range ur.exp.FindAllStringSubmatch(path, -1) {
 		//log.Debugf("i:%v, v:%#v, keys:%#v", i, v, ur.keys)
@@ -214,7 +238,7 @@ func parseRequestValues(path string, ur uriRegexp) context.Context {
 	return ctx
 }
 
-func getInterface(method, path string) (reflect.Type, context.Context) {
+func getHandler(method, path string) (func(http.ResponseWriter, *http.Request), context.Context) {
 	server.RLock()
 	defer server.RUnlock()
 
@@ -222,7 +246,7 @@ func getInterface(method, path string) (reflect.Type, context.Context) {
 
 	if i, ok := server.path[path]; ok {
 		//log.Debugf("find path:%v", path)
-		return i.source, nil
+		return i.call, nil
 	}
 
 	var p prefix
@@ -235,12 +259,20 @@ func getInterface(method, path string) (reflect.Type, context.Context) {
 		return !ok
 	})
 
-	for _, ue := range p.uriExps {
+	if !ok {
+		return nil, nil
+	}
+
+	for _, ue := range p.exps {
 		if ue.exp.MatchString(path) {
+			if len(ue.keys) == 0 {
+				return ue.call, nil
+			}
 			//	log.Debugf("uri exp:%v, path:%v", ue, path)
-			return ue.source, parseRequestValues(path, ue)
+			return ue.call, parseRequestValues(path, ue)
 		}
 	}
+
 	return nil, nil
 }
 
@@ -260,8 +292,8 @@ func (s *httpServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tp, ctx := getInterface(r.Method, r.URL.Path)
-	if tp == nil {
+	h, ctx := getHandler(r.Method, r.URL.Path)
+	if h == nil {
 		log.Errorf("%v %v %v not found.", r.RemoteAddr, r.Method, r.URL)
 		SendResponse(w, http.StatusNotFound, "invalid request")
 		return
@@ -271,10 +303,9 @@ func (s *httpServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		nr = nr.WithContext(ctx)
 	}
 
-	log.Debugf("%v %v %v %v", r.RemoteAddr, r.Method, r.URL, tp)
+	log.Debugf("%v %v %v %v", r.RemoteAddr, r.Method, r.URL, h)
 
-	callback := reflect.New(tp).MethodByName(r.Method).Interface().(func(http.ResponseWriter, *http.Request))
-	callback(w, nr)
+	h(w, nr)
 
 	return
 }
@@ -295,6 +326,13 @@ func Start(addr string) error {
 	server.Unlock()
 
 	return http.Serve(ln, server)
+}
+
+//Listener 获取监听地址.
+func Listener() net.Listener {
+	server.Lock()
+	defer server.Unlock()
+	return server.listener
 }
 
 //Stop 停止httpServer监听, 进行中的任务并不会因此而停止.
