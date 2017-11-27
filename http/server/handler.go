@@ -103,7 +103,7 @@ func RegisterHandler(call func(http.ResponseWriter, *http.Request), method, path
 
 	server.path[h.path] = h
 
-	log.Infof("add handler %v %v", method, path)
+	log.Infof("handler %v %v", method, path)
 
 	return nil
 }
@@ -206,7 +206,7 @@ func register(obj interface{}, path string, isPrefix bool) error {
 
 			server.prefix.ReplaceOrInsert(&p)
 
-			log.Infof("add prefix %v %v %v %v", method, exp.path, exp.keys, rt)
+			log.Infof("prefix %v %v %v %v", method, path, exp.keys, rt)
 			continue
 		}
 
@@ -216,7 +216,7 @@ func register(obj interface{}, path string, isPrefix bool) error {
 		}
 
 		server.path[h.path] = h
-		log.Infof("add path %v %v %v", method, path, rt)
+		log.Infof("path %v %v %v", method, path, rt)
 	}
 
 	return nil
