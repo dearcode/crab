@@ -16,11 +16,11 @@ type DB struct {
 	UserName string
 	Passwd   string
 	Charset  string
-	TimeOut  string
+	TimeOut  int
 }
 
-//NewDB create db instance.
-func NewDB(ip string, port int, dbName, user, pass, charset, timeout string) *DB {
+//NewDB create db instance, timeout 单位:秒.
+func NewDB(ip string, port int, dbName, user, pass, charset string, timeout int) *DB {
 	return &DB{
 		IP:       ip,
 		Port:     port,
@@ -69,8 +69,8 @@ func (db *DB) getOpt() string {
 		opts = append(opts, fmt.Sprintf("charset=%s", db.Charset))
 	}
 
-	if len(db.TimeOut) > 0 {
-		opts = append(opts, fmt.Sprintf("timeout=%ss", db.TimeOut))
+	if db.TimeOut > 0 {
+		opts = append(opts, fmt.Sprintf("timeout=%ds", db.TimeOut))
 	}
 
 	return strings.Join(opts, "&")

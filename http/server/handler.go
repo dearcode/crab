@@ -42,7 +42,7 @@ type httpServer struct {
 	prefix   *btree.BTree
 	filter   Filter
 	listener net.Listener
-	sync.RWMutex
+	mu       sync.RWMutex
 }
 
 func newHTTPServer() *httpServer {
@@ -94,8 +94,8 @@ func RegisterHandler(call func(http.ResponseWriter, *http.Request), method, path
 		call: call,
 	}
 
-	server.Lock()
-	defer server.Unlock()
+	server.mu.Lock()
+	defer server.mu.Unlock()
 
 	if _, ok := server.path[h.path]; ok {
 		return errors.Errorf("exist url:%v %v", method, path)
@@ -157,8 +157,8 @@ func register(obj interface{}, path string, isPrefix bool) error {
 		path = "/" + path
 	}
 
-	server.Lock()
-	defer server.Unlock()
+	server.mu.Lock()
+	defer server.mu.Unlock()
 
 	rv := reflect.ValueOf(obj)
 	for i := 0; i < rv.NumMethod(); i++ {
@@ -224,8 +224,8 @@ func register(obj interface{}, path string, isPrefix bool) error {
 
 //AddFilter 添加过滤函数.
 func AddFilter(filter Filter) {
-	server.Lock()
-	defer server.Unlock()
+	server.mu.Lock()
+	defer server.mu.Unlock()
 	server.filter = filter
 }
 
@@ -239,8 +239,8 @@ func parseRequestValues(path string, ur handlerRegexp) context.Context {
 }
 
 func getHandler(method, path string) (func(http.ResponseWriter, *http.Request), context.Context) {
-	server.RLock()
-	defer server.RUnlock()
+	server.mu.RLock()
+	defer server.mu.RUnlock()
 
 	path = method + path
 
@@ -258,6 +258,7 @@ func getHandler(method, path string) (func(http.ResponseWriter, *http.Request), 
 		//log.Debugf("path:%v, prefix:%v, ok:%v", path, p.path, ok)
 		return !ok
 	})
+	//	log.Debugf("ok:%v, prefix:%v", ok, p)
 
 	if !ok {
 		return nil, nil
@@ -268,7 +269,7 @@ func getHandler(method, path string) (func(http.ResponseWriter, *http.Request), 
 			if len(ue.keys) == 0 {
 				return ue.call, nil
 			}
-			//	log.Debugf("uri exp:%v, path:%v", ue, path)
+			//			log.Debugf("uri exp:%v, path:%v", ue, path)
 			return ue.call, parseRequestValues(path, ue)
 		}
 	}
@@ -303,7 +304,7 @@ func (s *httpServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		nr = nr.WithContext(ctx)
 	}
 
-	log.Debugf("%v %v %v %v", r.RemoteAddr, r.Method, r.URL, h)
+	log.Debugf("%v %v %v h:%#v", r.RemoteAddr, r.Method, r.URL, h)
 
 	h(w, nr)
 
@@ -315,30 +316,20 @@ func defaultFilter(_ http.ResponseWriter, r *http.Request) *http.Request {
 }
 
 //Start 启动httpServer.
-func Start(addr string) error {
+func Start(addr string) (net.Listener, error) {
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
-		return errors.Trace(err)
+		return nil, errors.Trace(err)
 	}
 
-	server.Lock()
+	server.mu.Lock()
 	server.listener = ln
-	server.Unlock()
+	server.mu.Unlock()
 
-	return http.Serve(ln, server)
-}
-
-//Listener 获取监听地址.
-func Listener() net.Listener {
-	server.Lock()
-	defer server.Unlock()
-	return server.listener
-}
-
-//Stop 停止httpServer监听, 进行中的任务并不会因此而停止.
-func Stop() error {
-	server.Lock()
-	defer server.Unlock()
-
-	return server.listener.Close()
+	go func() {
+		if err = http.Serve(ln, server); err != nil {
+			log.Errorf("Serve error:%v", err)
+		}
+	}()
+	return ln, nil
 }
