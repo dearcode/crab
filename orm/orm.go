@@ -210,6 +210,14 @@ func (s *Stmt) addRelation(t1, t2 string, id interface{}) *Stmt {
 	return s
 }
 
+// addOne2More 添加一对多关联条件
+func (s *Stmt) addOne2More(t1, t2 string, id interface{}) *Stmt {
+	t1 = util.FieldEscape(t1)
+	t2 = util.FieldEscape(t2)
+	s.addWhere(fmt.Sprintf("%s.%s_id=%d", t1, t2, id))
+	return s
+}
+
 // Query 根据传入的result结构，生成查询sql，并返回执行结果， result 必需是一个指向切片的指针.
 func (s *Stmt) Query(result interface{}) error {
 	if result == nil {
@@ -296,17 +304,24 @@ func (s *Stmt) Query(result interface{}) error {
 				continue
 			}
 
-			if f.Tag.Get("db_table") != "more" {
-				continue
-			}
-
 			lr := obj.Field(i).Addr().Interface()
 			id := reflect.ValueOf(refs[idx]).Elem().Interface()
 
-			//填充一对多结果，每次去查询
-			if err = NewStmt(s.db, util.FieldEscape(f.Name)).addRelation(f.Name, s.firstTable(), id).Query(lr); err != nil {
-				if errors.Cause(err) != meta.ErrNotFound {
-					return errors.Trace(err)
+			switch f.Tag.Get("db_table") {
+			case "more":
+
+				//填充一对多结果，每次去查询
+				if err = NewStmt(s.db, util.FieldEscape(f.Name)).addRelation(f.Name, s.firstTable(), id).Query(lr); err != nil {
+					if errors.Cause(err) != meta.ErrNotFound {
+						return errors.Trace(err)
+					}
+				}
+			case "one2more":
+				//填充一对多结果，每次去查询
+				if err = NewStmt(s.db, util.FieldEscape(f.Name)).addOne2More(f.Name, s.firstTable(), id).Query(lr); err != nil {
+					if errors.Cause(err) != meta.ErrNotFound {
+						return errors.Trace(err)
+					}
 				}
 			}
 		}
@@ -477,4 +492,13 @@ func (s *Stmt) Insert(data interface{}) (int64, error) {
 	}
 
 	return r.LastInsertId()
+}
+
+//RawExec 保留的原始执行接口.
+func (s *Stmt) Exec(query string, args ...interface{}) (int64, error) {
+	rs, err := s.db.Exec(query, args...)
+	if err != nil {
+		return -1, errors.Trace(err)
+	}
+	return rs.RowsAffected()
 }
