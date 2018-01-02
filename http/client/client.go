@@ -2,6 +2,7 @@ package client
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -82,6 +83,22 @@ func (c httpClient) Get(url string, headers map[string]string, body []byte) ([]b
 
 func (c httpClient) POST(url string, headers map[string]string, body []byte) ([]byte, error) {
 	return c.do("POST", url, headers, body)
+}
+
+//PostJSON 传json结构数据.
+func (c httpClient) PostJSON(url string, headers map[string]string, data interface{}, resp interface{}) error {
+	buf, err := json.Marshal(data)
+	if err != nil {
+		return errors.Trace(err)
+	}
+
+	headers["Content-type"] = "application/json"
+
+	if buf, err = c.do("POST", url, headers, buf); err != nil {
+		return errors.Trace(err)
+	}
+
+	return json.Unmarshal(buf, resp)
 }
 
 func (c httpClient) PUT(url string, headers map[string]string, body []byte) ([]byte, error) {
