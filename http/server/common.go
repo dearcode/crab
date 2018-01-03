@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 )
 
 //VariablePostion 变量位置.
@@ -50,6 +51,22 @@ const (
 	//RESTful any method, may be get,post,put or delete.
 	RESTful
 )
+
+//NewMethod 转换字符串method到Method类型.
+func NewMethod(m string) Method {
+	switch strings.ToUpper(m) {
+	case http.MethodGet:
+		return GET
+	case http.MethodPost:
+		return POST
+	case http.MethodPut:
+		return PUT
+	case http.MethodDelete:
+		return DELETE
+
+	}
+	return RESTful
+}
 
 //String 类型转字符串
 func (m Method) String() string {
