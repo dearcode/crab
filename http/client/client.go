@@ -92,6 +92,9 @@ func (c httpClient) PostJSON(url string, headers map[string]string, data interfa
 		return errors.Trace(err)
 	}
 
+	if headers == nil {
+		headers = make(map[string]string)
+	}
 	headers["Content-type"] = "application/json"
 
 	if buf, err = c.do("POST", url, headers, buf); err != nil {
