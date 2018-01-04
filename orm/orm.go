@@ -248,7 +248,7 @@ func (s *Stmt) Query(result interface{}) error {
 
 	rows, err := s.db.Query(sql)
 	if err != nil {
-		return errors.Trace(err)
+		return errors.Annotatef(err, sql)
 	}
 	defer rows.Close()
 
