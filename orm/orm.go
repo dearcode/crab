@@ -278,6 +278,9 @@ func (s *Stmt) Query(result interface{}) error {
 						if sf.PkgPath != "" && !sf.Anonymous { // unexported
 							continue
 						}
+						if sf.Type.Kind() == reflect.Slice {
+							continue
+						}
 
 						refs = append(refs, obj.Field(i).Field(j).Addr().Interface())
 					}
@@ -309,7 +312,6 @@ func (s *Stmt) Query(result interface{}) error {
 
 			switch f.Tag.Get("db_table") {
 			case "more":
-
 				//填充一对多结果，每次去查询
 				if err = NewStmt(s.db, util.FieldEscape(f.Name)).addRelation(f.Name, s.firstTable(), id).Query(lr); err != nil {
 					if errors.Cause(err) != meta.ErrNotFound {
