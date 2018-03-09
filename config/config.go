@@ -146,15 +146,24 @@ func LoadConfig(path string, result interface{}) error {
 		if f.PkgPath != "" && !f.Anonymous { // unexported
 			continue
 		}
+		ft := rt.Field(i).Type
 		fv := rv.Field(i)
+		if f.Type.Kind() == reflect.Ptr {
+			fv = fv.Elem()
+			ft = ft.Elem()
+		}
 
-		if f.Type.Kind() == reflect.Struct {
-			for j := 0; j < f.Type.NumField(); j++ {
-				sf := f.Type.Field(j)
+		if ft.Kind() == reflect.Struct {
+			for j := 0; j < ft.NumField(); j++ {
+				sf := ft.Field(j)
 				if f.PkgPath != "" && !f.Anonymous { // unexported
 					continue
 				}
 				sfv := fv.Field(j)
+				if sf.Type.Kind() == reflect.Ptr {
+					sfv = reflect.New(sfv.Elem().Type())
+					fv.Field(j).Set(sfv)
+				}
 
 				var d interface{}
 				if v := sf.Tag.Get("default"); v != "" {

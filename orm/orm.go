@@ -330,7 +330,7 @@ func (s *Stmt) Query(result interface{}) error {
 
 		if rv.Kind() == reflect.Struct {
 			reflect.ValueOf(result).Elem().Set(reflect.ValueOf(obj.Interface()))
-			log.Debugf("result %v", result)
+			log.Debugf("result %#v", result)
 			return nil
 		}
 
@@ -463,6 +463,7 @@ func (s *Stmt) Update(data interface{}) (int64, error) {
 	}
 
 	sql, refs := s.SQLUpdate(rt, rv)
+	log.Debugf("sql:%v, vals:%#v", sql, refs)
 	r, err := s.db.Exec(sql, refs...)
 	if err != nil {
 		return 0, errors.Trace(err)
