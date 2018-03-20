@@ -28,7 +28,7 @@ func (i *index) GET(w http.ResponseWriter, req *http.Request) {
 }
 
 func testHTTPClient() {
-	url := "http://127.0.0.1:9000/main/index/"
+	url := fmt.Sprintf("http://127.0.0.1:9000/main/index/?id=111&tm=%v", time.Now().UnixNano())
 	buf, err := client.New(1).Get(url, nil, nil)
 	if err != nil {
 		panic(err.Error())
@@ -49,14 +49,16 @@ func main() {
 
 	server.RegisterHandler(testHandler, "GET", "/testHandler/")
 
-	go func() {
-		for i := 0; i < 5; i++ {
-			time.Sleep(time.Second)
-			testHTTPClient()
-		}
-	}()
-
-	if err := server.Start(*addr); err != nil {
+	ln, err := server.Start(*addr)
+	if err != nil {
 		panic(err.Error())
 	}
+
+    fmt.Printf("listen:%v\n", ln.Addr())
+
+	for i := 0; i < 5; i++ {
+		time.Sleep(time.Second)
+		testHTTPClient()
+	}
+
 }
