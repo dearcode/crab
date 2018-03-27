@@ -1,5 +1,5 @@
-# Crab
-自己用的web框架  
+![Logo](https://raw.githubusercontent.com/dearcode/crab/master/doc/logo.png "Crab logo")
+开发 API 必备库
 
 # config  
 加载ini格式的配置文件, 支持以;或者#开头的注释
