@@ -1,4 +1,4 @@
-![Logo](https://raw.githubusercontent.com/dearcode/crab/master/doc/logo.png "Crab logo")
+![Logo](https://raw.githubusercontent.com/dearcode/crab/master/doc/logo.png =100x100)  
 开发 API 必备库
 
 # config  
