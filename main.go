@@ -54,7 +54,7 @@ func main() {
 		panic(err.Error())
 	}
 
-    fmt.Printf("listen:%v\n", ln.Addr())
+	fmt.Printf("listen:%v\n", ln.Addr())
 
 	for i := 0; i < 5; i++ {
 		time.Sleep(time.Second)

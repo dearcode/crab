@@ -26,6 +26,11 @@ type Stmt struct {
 	db     *sql.DB
 }
 
+//IsNotFound error为not found.
+func IsNotFound(err error) bool {
+	return errors.Cause(err) == meta.ErrNotFound
+}
+
 //NewStmt new db stmt.
 func NewStmt(db *sql.DB, table string) *Stmt {
 	return &Stmt{
