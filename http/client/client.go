@@ -28,11 +28,9 @@ func (se *StatusError) Error() string {
 	return fmt.Sprintf("HTTP Status %v", se.Code)
 }
 
-func (c *HTTPClient) Dial(network, addr string) (net.Conn, error) {
+func (c *HTTPClient) dial(network, addr string) (net.Conn, error) {
 	var conn net.Conn
 	var err error
-
-	log.Debugf("c:%p, %#v", c, *c)
 
 	for i := 0; i < c.retryTimes; i++ {
 		conn, err = net.DialTimeout(network, addr, c.timeout)
@@ -70,15 +68,13 @@ func New() *HTTPClient {
 		retryTimes: defaultRetryTimes,
 	}
 
-	hc.client.Transport = &http.Transport{Dial: hc.Dial}
-	log.Debugf("init hc:%p", hc)
+	hc.client.Transport = &http.Transport{Dial: hc.dial}
 	return hc
 }
 
 //Timeout 设置超时时间，单位:秒, 默认15秒.
 func (c *HTTPClient) Timeout(t int) *HTTPClient {
 	c.timeout = time.Duration(t) * time.Second
-	log.Debugf("timeout c:%p", c)
 	return c
 }
 
@@ -121,12 +117,21 @@ func (c HTTPClient) Get(url string, headers map[string]string, body []byte) ([]b
 	return c.do("GET", url, headers, body)
 }
 
+//GetJSON 发送Get请求, 并解析返回json.
+func (c HTTPClient) GetJSON(url string, headers map[string]string, resp interface{}) error {
+	buf, err := c.do("GET", url, headers, nil)
+	if err != nil {
+		return errors.Trace(err)
+	}
+	return errors.Trace(json.Unmarshal(buf, resp))
+}
+
 //Post 发Post请求.
 func (c HTTPClient) Post(url string, headers map[string]string, body []byte) ([]byte, error) {
 	return c.do("POST", url, headers, body)
 }
 
-//PostJSON 传json结构数据.
+//PostJSON 发送json结构数据请求，并解析返回结果.
 func (c HTTPClient) PostJSON(url string, headers map[string]string, data interface{}, resp interface{}) error {
 	buf, err := json.Marshal(data)
 	if err != nil {
@@ -150,7 +155,35 @@ func (c HTTPClient) Put(url string, headers map[string]string, body []byte) ([]b
 	return c.do("PUT", url, headers, body)
 }
 
+//PutJSON 发送json请求解析返回结果.
+func (c HTTPClient) PutJSON(url string, headers map[string]string, data interface{}, resp interface{}) error {
+	buf, err := json.Marshal(data)
+	if err != nil {
+		return errors.Trace(err)
+	}
+
+	if headers == nil {
+		headers = make(map[string]string)
+	}
+	headers["Content-type"] = "application/json"
+
+	if buf, err = c.do("PUT", url, headers, buf); err != nil {
+		return errors.Trace(err)
+	}
+	return json.Unmarshal(buf, resp)
+}
+
 //Delete 发送delete请求.
 func (c HTTPClient) Delete(url string, headers map[string]string, body []byte) ([]byte, error) {
 	return c.do("DELETE", url, headers, body)
+}
+
+//DeleteJSON 发送JSON格式delete请求, 并解析返回结果.
+func (c HTTPClient) DeleteJSON(url string, headers map[string]string, resp interface{}) error {
+	buf, err := c.do("DELETE", url, headers, nil)
+	if err != nil {
+		return errors.Trace(err)
+	}
+
+	return json.Unmarshal(buf, resp)
 }

@@ -502,7 +502,7 @@ func (s *Stmt) Insert(data interface{}) (int64, error) {
 	return r.LastInsertId()
 }
 
-//RawExec 保留的原始执行接口.
+//Exec 保留的原始执行接口.
 func (s *Stmt) Exec(query string, args ...interface{}) (int64, error) {
 	rs, err := s.db.Exec(query, args...)
 	if err != nil {

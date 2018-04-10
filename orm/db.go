@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	//mysql
 	_ "github.com/go-sql-driver/mysql"
 )
 

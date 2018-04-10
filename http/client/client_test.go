@@ -6,7 +6,7 @@ import (
 
 func TestHTTPClient(t *testing.T) {
 	hc := New().Timeout(1)
-	buf, err := hc.Get("http://xxxx.aa/", nil, nil)
+	buf, err := hc.Get("http://baidu.com/", nil, nil)
 	if err != nil {
 		t.Fatalf("err:%v", err)
 	}
