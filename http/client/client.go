@@ -10,7 +10,8 @@ import (
 	"time"
 
 	"github.com/juju/errors"
-	"github.com/zssky/log"
+
+	"github.com/dearcode/crab/log"
 )
 
 //HTTPClient 带超时重试控制的http客户端.
@@ -18,6 +19,7 @@ type HTTPClient struct {
 	retryTimes int
 	timeout    time.Duration
 	client     http.Client
+	logger     *log.Logger
 }
 
 type StatusError struct {
@@ -37,17 +39,17 @@ func (c *HTTPClient) dial(network, addr string) (net.Conn, error) {
 		if err == nil {
 			break
 		}
-		log.Errorf("DialTimeout %s:%s error:%v retry:%v", network, addr, err, i+1)
+		c.logger.Errorf("DialTimeout %s:%s error:%v retry:%v", network, addr, err, i+1)
 	}
 
 	if err != nil {
-		log.Errorf("DialTimeout %s:%s error:%v", network, addr, err)
+		c.logger.Errorf("DialTimeout %s:%s error:%v", network, addr, err)
 		return nil, errors.Trace(err)
 	}
 
 	deadline := time.Now().Add(c.timeout)
 	if err = conn.SetDeadline(deadline); err != nil {
-		log.Errorf("SetDeadline %s:%s", network, addr)
+		c.logger.Errorf("SetDeadline %s:%s", network, addr)
 		conn.Close()
 		return nil, errors.Trace(err)
 	}
@@ -78,8 +80,9 @@ func (c *HTTPClient) Timeout(t int) *HTTPClient {
 	return c
 }
 
-func (c *HTTPClient) SetLogLevel(l string) *HTTPClient {
-	log.SetLevelByString(l)
+//SetLogger 开启日志.
+func (c *HTTPClient) SetLogger(l *log.Logger) *HTTPClient {
+	c.logger = l
 	return c
 }
 
@@ -128,7 +131,7 @@ func (c HTTPClient) GetJSON(url string, headers map[string]string, resp interfac
 	if err != nil {
 		return errors.Trace(err)
 	}
-	log.Debugf("url:%v, resp:%s", url, buf)
+	c.logger.Debugf("url:%v, resp:%s", url, buf)
 	return errors.Trace(json.Unmarshal(buf, resp))
 }
 
@@ -153,7 +156,7 @@ func (c HTTPClient) PostJSON(url string, headers map[string]string, data interfa
 		return errors.Trace(err)
 	}
 
-	log.Debugf("url:%v, resp:%s", url, buf)
+	c.logger.Debugf("url:%v, resp:%s", url, buf)
 	return json.Unmarshal(buf, resp)
 }
 
@@ -177,7 +180,7 @@ func (c HTTPClient) PutJSON(url string, headers map[string]string, data interfac
 	if buf, err = c.do("PUT", url, headers, buf); err != nil {
 		return errors.Trace(err)
 	}
-	log.Debugf("url:%v, resp:%s", url, buf)
+	c.logger.Debugf("url:%v, resp:%s", url, buf)
 	return json.Unmarshal(buf, resp)
 }
 
@@ -192,6 +195,6 @@ func (c HTTPClient) DeleteJSON(url string, headers map[string]string, resp inter
 	if err != nil {
 		return errors.Trace(err)
 	}
-	log.Debugf("url:%v, resp:%s", url, buf)
+	c.logger.Debugf("url:%v, resp:%s", url, buf)
 	return json.Unmarshal(buf, resp)
 }

@@ -16,9 +16,9 @@ func TestCacheActive(t *testing.T) {
 	c := NewCache(2)
 
 	c.Add("1", &data)
-	val := c.Get("1")
+	c.Get("1")
 	time.Sleep(time.Second)
-	val = c.Get("1")
+	val := c.Get("1")
 	if val == nil {
 		t.Fatalf("not found, expect %v", data)
 	}
@@ -39,7 +39,7 @@ func TestCacheInactive(t *testing.T) {
 
 	time.Sleep(time.Second * 2)
 
-	val = c.Get("1")
+	c.Get("1")
 	if val != nil {
 		t.Fatalf("expect not found")
 	}

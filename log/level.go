@@ -1,19 +1,23 @@
 package log
 
-import ()
-
-type LogLevel int
+//Level 日志级别.
+type Level int
 
 const (
-	LogFatal LogLevel = iota
+	//LogFatal fatal.
+	LogFatal Level = iota
+	//LogError error.
 	LogError
+	//LogWarning warning.
 	LogWarning
+	//LogInfo info.
 	LogInfo
+	//LogDebug debug.
 	LogDebug
 )
 
-//StringToLogLevel 字符串转LogLevel.
-func StringToLogLevel(level string) LogLevel {
+//stringToLevel 字符串转Level.
+func stringToLevel(level string) Level {
 	switch level {
 	case "fatal":
 		return LogFatal
@@ -31,8 +35,8 @@ func StringToLogLevel(level string) LogLevel {
 	return LogDebug
 }
 
-//LogLevel loglevel 转字符串.
-func (l LogLevel) String() string {
+//Level Level 转字符串.
+func (l Level) String() string {
 	switch l {
 	case LogFatal:
 		return "fatal"
@@ -48,8 +52,8 @@ func (l LogLevel) String() string {
 	return "unknown"
 }
 
-//LogLevel loglevel转颜色.
-func (l LogLevel) Color() string {
+//color Level转颜色.
+func (l Level) color() string {
 	switch l {
 	case LogFatal:
 		return "\033[0;31m"

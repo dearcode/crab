@@ -15,7 +15,7 @@ import (
 func AesEncrypt(encodeStr []byte, key []byte) (string, error) {
 	encodeBytes := encodeStr
 	block, err := aes.NewCipher(key)
-	if err != err {
+	if err != nil {
 		return "", errors.Trace(err)
 	}
 	blockSize := block.BlockSize()

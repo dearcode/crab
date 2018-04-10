@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/juju/errors"
-	"github.com/zssky/log"
 
+	"github.com/dearcode/crab/log"
 	"github.com/dearcode/crab/meta"
 	"github.com/dearcode/crab/util"
 )
@@ -24,6 +24,7 @@ type Stmt struct {
 	offset int
 	limit  int
 	db     *sql.DB
+	logger *log.Logger
 }
 
 //IsNotFound error为not found.
@@ -37,6 +38,12 @@ func NewStmt(db *sql.DB, table string) *Stmt {
 		table: table,
 		db:    db,
 	}
+}
+
+//SetLogger 输出log.
+func (s *Stmt) SetLogger(l *log.Logger) *Stmt {
+	s.logger = l
+	return s
 }
 
 //Where 添加查询条件
@@ -145,7 +152,7 @@ func (s *Stmt) SQLCount() string {
 	s.SQLCondition(bs)
 
 	sql := bs.String()
-	log.Debugf("sql:%v", sql)
+	s.logger.Debugf("sql:%v", sql)
 	return sql
 }
 
@@ -196,7 +203,7 @@ func (s *Stmt) SQLQuery(rt reflect.Type) string {
 	s.SQLCondition(bs)
 
 	sql := bs.String()
-	log.Debugf("sql:%v", sql)
+	s.logger.Debugf("sql:%v", sql)
 	return sql
 }
 
@@ -335,7 +342,7 @@ func (s *Stmt) Query(result interface{}) error {
 
 		if rv.Kind() == reflect.Struct {
 			reflect.ValueOf(result).Elem().Set(reflect.ValueOf(obj.Interface()))
-			log.Debugf("result %#v", result)
+			s.logger.Debugf("result %#v", result)
 			return nil
 		}
 
@@ -347,7 +354,7 @@ func (s *Stmt) Query(result interface{}) error {
 	}
 
 	reflect.ValueOf(result).Elem().Set(reflect.ValueOf(rv.Interface()))
-	log.Debugf("result %v", result)
+	s.logger.Debugf("result %v", result)
 
 	return nil
 }
@@ -414,7 +421,7 @@ func (s *Stmt) SQLInsert(rt reflect.Type, rv reflect.Value) (sql string, refs []
 
 	bs.WriteString(") ")
 	sql = bs.String()
-	log.Debugf("sql:%v", sql)
+	s.logger.Debugf("sql:%v", sql)
 	return
 }
 
@@ -468,7 +475,7 @@ func (s *Stmt) Update(data interface{}) (int64, error) {
 	}
 
 	sql, refs := s.SQLUpdate(rt, rv)
-	log.Debugf("sql:%v, vals:%#v", sql, refs)
+	s.logger.Debugf("sql:%v, vals:%#v", sql, refs)
 	r, err := s.db.Exec(sql, refs...)
 	if err != nil {
 		return 0, errors.Trace(err)

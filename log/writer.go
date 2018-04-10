@@ -15,13 +15,14 @@ type pos struct {
 	function string
 }
 
+//Logger 日志对象.
 type Logger struct {
 	rolling  bool
 	fileName string
 	fileTime time.Time
 	file     *os.File
 	out      *bufio.Writer
-	level    LogLevel
+	level    Level
 	color    bool
 	posCache map[uintptr]pos
 	mu       sync.Mutex
@@ -66,14 +67,14 @@ func (l *Logger) SetOutputFile(path string) *Logger {
 }
 
 //SetLevel 设置日志级别.
-func (l *Logger) SetLevel(level LogLevel) *Logger {
+func (l *Logger) SetLevel(level Level) *Logger {
 	l.level = level
 	return l
 }
 
 //SetLevelByString 设置字符串格式的日志级别.
 func (l *Logger) SetLevelByString(level string) *Logger {
-	l.level = StringToLogLevel(level)
+	l.level = stringToLevel(level)
 	return l
 }
 
@@ -114,7 +115,7 @@ func (l *Logger) rotate(now time.Time) {
 	l.SetOutputFile(l.fileName)
 }
 
-func (l *Logger) write(t LogLevel, format string, argv ...interface{}) {
+func (l *Logger) write(t Level, format string, argv ...interface{}) {
 	if t > l.level {
 		return
 	}
@@ -136,15 +137,18 @@ func (l *Logger) write(t LogLevel, format string, argv ...interface{}) {
 
 	if l.color {
 		//颜色开始
-		l.out.WriteString(t.Color())
+		l.out.WriteString(t.color())
 	}
 
 	//日志级别
 	l.out.WriteString(t.String())
 
+	l.out.WriteString(" ")
+
 	//函数名
 	l.out.WriteString(function)
 
+	l.out.WriteString(" ")
 	//日志正文
 	fmt.Fprintf(l.out, format, argv...)
 
@@ -158,43 +162,53 @@ func (l *Logger) write(t LogLevel, format string, argv ...interface{}) {
 	l.out.Flush()
 }
 
+//Info .
 func (l *Logger) Info(v ...interface{}) {
 	l.write(LogInfo, fmt.Sprint(v...))
 }
 
+//Infof .
 func (l *Logger) Infof(format string, v ...interface{}) {
 	l.write(LogInfo, format, v...)
 }
 
+//Debug .
 func (l *Logger) Debug(v ...interface{}) {
 	l.write(LogDebug, fmt.Sprint(v...))
 }
 
+//Debugf .
 func (l *Logger) Debugf(format string, v ...interface{}) {
 	l.write(LogDebug, format, v...)
 }
 
+//Warning .
 func (l *Logger) Warning(v ...interface{}) {
 	l.write(LogWarning, fmt.Sprint(v...))
 }
 
+//Warningf .
 func (l *Logger) Warningf(format string, v ...interface{}) {
 	l.write(LogWarning, format, v...)
 }
 
+//Error .
 func (l *Logger) Error(v ...interface{}) {
 	l.write(LogError, fmt.Sprint(v...))
 }
 
+//Errorf .
 func (l *Logger) Errorf(format string, v ...interface{}) {
 	l.write(LogError, format, v...)
 }
 
+//Fatal .
 func (l *Logger) Fatal(v ...interface{}) {
 	l.write(LogFatal, fmt.Sprint(v...))
 	os.Exit(-1)
 }
 
+//Fatalf .
 func (l *Logger) Fatalf(format string, v ...interface{}) {
 	l.write(LogFatal, format, v...)
 	os.Exit(-1)

@@ -18,10 +18,5 @@ func TestLog(t *testing.T) {
 	Infof("%v default has color test log", time.Now())
 
 	l.SetOutputFile("./vvv.log").SetRolling(true)
-	l.Infof("vvvvvvvvv")
-
-	for i := 0; i < 999999999; i++ {
-		time.Sleep(time.Second)
-		l.Info(time.Now())
-	}
+	l.Info(time.Now())
 }

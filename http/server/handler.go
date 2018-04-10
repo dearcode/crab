@@ -13,7 +13,8 @@ import (
 
 	"github.com/google/btree"
 	"github.com/juju/errors"
-	"github.com/zssky/log"
+
+	"github.com/dearcode/crab/log"
 )
 
 var (
@@ -118,7 +119,7 @@ var (
 )
 
 func init() {
-	exp, err := regexp.Compile("{(\\w+)?}")
+	exp, err := regexp.Compile(`{(\w+)?}`)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -170,7 +171,7 @@ func register(obj interface{}, path string, isPrefix bool) error {
 		case http.MethodPut:
 		case http.MethodDelete:
 		default:
-			log.Warnf("ignore func:%v %v %v", method, path, rt)
+			log.Warningf("ignore func:%v %v %v", method, path, rt)
 			continue
 		}
 
@@ -307,8 +308,6 @@ func (s *httpServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("%v %v %v h:%#v", r.RemoteAddr, r.Method, r.URL, h)
 
 	h(w, nr)
-
-	return
 }
 
 func defaultFilter(_ http.ResponseWriter, r *http.Request) *http.Request {

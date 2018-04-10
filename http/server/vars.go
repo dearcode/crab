@@ -9,8 +9,8 @@ import (
 	"strconv"
 
 	"github.com/juju/errors"
-	"github.com/zssky/log"
 
+	"github.com/dearcode/crab/log"
 	"github.com/dearcode/crab/meta"
 	"github.com/dearcode/crab/validation"
 )

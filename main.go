@@ -29,7 +29,7 @@ func (i *index) GET(w http.ResponseWriter, req *http.Request) {
 
 func testHTTPClient() {
 	url := fmt.Sprintf("http://127.0.0.1:9000/main/index/?id=111&tm=%v", time.Now().UnixNano())
-	buf, err := client.New(1).Get(url, nil, nil)
+	buf, err := client.New().Get(url, nil, nil)
 	if err != nil {
 		panic(err.Error())
 	}
