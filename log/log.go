@@ -75,3 +75,13 @@ func SetLevelByString(level string) {
 func SetColor(color bool) {
 	mlog.SetColor(color)
 }
+
+//SetOutputFile 初始化时设置输出文件.
+func SetOutputFile(f string) {
+	mlog.SetOutputFile(f)
+}
+
+//SetRolling 每天生成一个文件.
+func SetRolling(on bool) {
+	mlog.SetRolling(on)
+}
