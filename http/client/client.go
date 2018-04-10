@@ -78,6 +78,11 @@ func (c *HTTPClient) Timeout(t int) *HTTPClient {
 	return c
 }
 
+func (c *HTTPClient) SetLogLevel(l string) *HTTPClient {
+	log.SetLevelByString(l)
+	return c
+}
+
 //RetryTimes 设置连接重试次数，默认为3次
 func (c *HTTPClient) RetryTimes(t int) *HTTPClient {
 	c.retryTimes = t
@@ -123,6 +128,7 @@ func (c HTTPClient) GetJSON(url string, headers map[string]string, resp interfac
 	if err != nil {
 		return errors.Trace(err)
 	}
+	log.Debugf("url:%v, resp:%s", url, buf)
 	return errors.Trace(json.Unmarshal(buf, resp))
 }
 
@@ -147,6 +153,7 @@ func (c HTTPClient) PostJSON(url string, headers map[string]string, data interfa
 		return errors.Trace(err)
 	}
 
+	log.Debugf("url:%v, resp:%s", url, buf)
 	return json.Unmarshal(buf, resp)
 }
 
@@ -170,6 +177,7 @@ func (c HTTPClient) PutJSON(url string, headers map[string]string, data interfac
 	if buf, err = c.do("PUT", url, headers, buf); err != nil {
 		return errors.Trace(err)
 	}
+	log.Debugf("url:%v, resp:%s", url, buf)
 	return json.Unmarshal(buf, resp)
 }
 
@@ -184,6 +192,6 @@ func (c HTTPClient) DeleteJSON(url string, headers map[string]string, resp inter
 	if err != nil {
 		return errors.Trace(err)
 	}
-
+	log.Debugf("url:%v, resp:%s", url, buf)
 	return json.Unmarshal(buf, resp)
 }
