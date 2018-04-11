@@ -178,7 +178,7 @@ func (l *Logger) write(t Level, format string, argv ...interface{}) {
 //Info .
 func (l *Logger) Info(v ...interface{}) {
 	if l == nil {
-		return nil
+		return
 	}
 	l.write(LogInfo, fmt.Sprint(v...))
 }
@@ -186,15 +186,15 @@ func (l *Logger) Info(v ...interface{}) {
 //Infof .
 func (l *Logger) Infof(format string, v ...interface{}) {
 	if l == nil {
-		return nil
+		return
 	}
 	l.write(LogInfo, format, v...)
 }
 
 //Debug .
 func (l *Logger) Debug(v ...interface{}) {
-	if l == nil {
-		return nil
+	if l != nil {
+		return
 	}
 	l.write(LogDebug, fmt.Sprint(v...))
 }
@@ -202,7 +202,7 @@ func (l *Logger) Debug(v ...interface{}) {
 //Debugf .
 func (l *Logger) Debugf(format string, v ...interface{}) {
 	if l == nil {
-		return nil
+		return
 	}
 	l.write(LogDebug, format, v...)
 }
@@ -210,7 +210,7 @@ func (l *Logger) Debugf(format string, v ...interface{}) {
 //Warning .
 func (l *Logger) Warning(v ...interface{}) {
 	if l == nil {
-		return nil
+		return
 	}
 	l.write(LogWarning, fmt.Sprint(v...))
 }
@@ -218,7 +218,7 @@ func (l *Logger) Warning(v ...interface{}) {
 //Warningf .
 func (l *Logger) Warningf(format string, v ...interface{}) {
 	if l == nil {
-		return nil
+		return
 	}
 	l.write(LogWarning, format, v...)
 }
@@ -226,7 +226,7 @@ func (l *Logger) Warningf(format string, v ...interface{}) {
 //Error .
 func (l *Logger) Error(v ...interface{}) {
 	if l == nil {
-		return nil
+		return
 	}
 	l.write(LogError, fmt.Sprint(v...))
 }
@@ -234,7 +234,7 @@ func (l *Logger) Error(v ...interface{}) {
 //Errorf .
 func (l *Logger) Errorf(format string, v ...interface{}) {
 	if l == nil {
-		return nil
+		return
 	}
 	l.write(LogError, format, v...)
 }
@@ -242,7 +242,7 @@ func (l *Logger) Errorf(format string, v ...interface{}) {
 //Fatal .
 func (l *Logger) Fatal(v ...interface{}) {
 	if l == nil {
-		return nil
+		return
 	}
 	l.write(LogFatal, fmt.Sprint(v...))
 	os.Exit(-1)
@@ -251,7 +251,7 @@ func (l *Logger) Fatal(v ...interface{}) {
 //Fatalf .
 func (l *Logger) Fatalf(format string, v ...interface{}) {
 	if l == nil {
-		return nil
+		return
 	}
 	l.write(LogFatal, format, v...)
 	os.Exit(-1)
