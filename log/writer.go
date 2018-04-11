@@ -40,12 +40,19 @@ func NewLogger() *Logger {
 
 //SetColor 开启/关闭颜色.
 func (l *Logger) SetColor(on bool) *Logger {
+	if l == nil {
+		return nil
+	}
 	l.color = on
 	return l
 }
 
 //SetRolling 每天生成一个文件.
 func (l *Logger) SetRolling(on bool) *Logger {
+	if l == nil {
+		return nil
+	}
+
 	l.rolling = on
 	return l
 }
@@ -68,12 +75,18 @@ func (l *Logger) SetOutputFile(path string) *Logger {
 
 //SetLevel 设置日志级别.
 func (l *Logger) SetLevel(level Level) *Logger {
+	if l == nil {
+		return nil
+	}
 	l.level = level
 	return l
 }
 
 //SetLevelByString 设置字符串格式的日志级别.
 func (l *Logger) SetLevelByString(level string) *Logger {
+	if l == nil {
+		return nil
+	}
 	l.level = stringToLevel(level)
 	return l
 }
@@ -164,52 +177,82 @@ func (l *Logger) write(t Level, format string, argv ...interface{}) {
 
 //Info .
 func (l *Logger) Info(v ...interface{}) {
+	if l == nil {
+		return nil
+	}
 	l.write(LogInfo, fmt.Sprint(v...))
 }
 
 //Infof .
 func (l *Logger) Infof(format string, v ...interface{}) {
+	if l == nil {
+		return nil
+	}
 	l.write(LogInfo, format, v...)
 }
 
 //Debug .
 func (l *Logger) Debug(v ...interface{}) {
+	if l == nil {
+		return nil
+	}
 	l.write(LogDebug, fmt.Sprint(v...))
 }
 
 //Debugf .
 func (l *Logger) Debugf(format string, v ...interface{}) {
+	if l == nil {
+		return nil
+	}
 	l.write(LogDebug, format, v...)
 }
 
 //Warning .
 func (l *Logger) Warning(v ...interface{}) {
+	if l == nil {
+		return nil
+	}
 	l.write(LogWarning, fmt.Sprint(v...))
 }
 
 //Warningf .
 func (l *Logger) Warningf(format string, v ...interface{}) {
+	if l == nil {
+		return nil
+	}
 	l.write(LogWarning, format, v...)
 }
 
 //Error .
 func (l *Logger) Error(v ...interface{}) {
+	if l == nil {
+		return nil
+	}
 	l.write(LogError, fmt.Sprint(v...))
 }
 
 //Errorf .
 func (l *Logger) Errorf(format string, v ...interface{}) {
+	if l == nil {
+		return nil
+	}
 	l.write(LogError, format, v...)
 }
 
 //Fatal .
 func (l *Logger) Fatal(v ...interface{}) {
+	if l == nil {
+		return nil
+	}
 	l.write(LogFatal, fmt.Sprint(v...))
 	os.Exit(-1)
 }
 
 //Fatalf .
 func (l *Logger) Fatalf(format string, v ...interface{}) {
+	if l == nil {
+		return nil
+	}
 	l.write(LogFatal, format, v...)
 	os.Exit(-1)
 }
