@@ -121,7 +121,7 @@ func (l *Logger) rotate(now time.Time) {
 	l.out.Flush()
 	l.file.Close()
 
-	oldFile := l.fileName + time.Now().Format("20060102")
+	oldFile := l.fileName + "." + time.Now().AddDate(0, 0, -1).Format("20060102")
 
 	os.Rename(l.fileName, oldFile)
 
