@@ -1,5 +1,6 @@
+## Crab 开发必备库  
 ![Logo](https://raw.githubusercontent.com/dearcode/crab/master/doc/logo.png)   
-开发 API 必备库
+
 
 # config  
 加载ini格式的配置文件, 支持以;或者#开头的注释
@@ -114,6 +115,5 @@ if err != nil {
 
 ```  
 
-# validation  
-这是从beego复制过来的，改了些东西，这个要重新整理下  
+
 

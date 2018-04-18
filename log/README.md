@@ -2,33 +2,38 @@
 crab log 是一个轻量级log库，支持不同级别不同颜色输出，按天滚动输出日志文件等常用日志功能  
 
 ## Example  
-[![Example Output](doc/log_test.png)](log/log_test.go)  
+[![Example Output](../doc/log_test.png)](log_test.go)  
 
 ```go
-package log 
+package main                                                                                                                                                                                                                                              
 
 import (
-    "testing"
     "time"
+
+    "github.com/dearcode/crab/log"
 )
 
-func TestLog(t *testing.T) {
-    Debug("default log begin")
-    Infof("%v test log", time.Now())
+func main() {
+    log.Debug("default log begin")
+    log.Infof("%v test log", time.Now())
 
-    l := NewLogger()
+    l := log.NewLogger()
     l.Debug("logger 1111111111")
     l.Info("logger 2222222222")
     l.Warningf("logger 33333 %v", time.Now())
     l.Errorf("logger color %v xxxxxx", time.Now().UnixNano())
+
+    //关闭颜色显示
     l.SetColor(false)
+
     l.Errorf("logger no color %v yyyyyy", time.Now().UnixNano())
-    Infof("%v default has color test log", time.Now())
+    log.Infof("%v default has color test log", time.Now())
 
-    l.SetOutputFile("./vvv.log").SetRolling(true)                                                                                                                                                                                                         
+    //指定输出文件
+    l.SetOutputFile("./vvv.log").SetRolling(true)
     l.Info(time.Now())
-}
 
+}
 ```  
 
 ## Installing
