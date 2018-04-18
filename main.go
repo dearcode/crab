@@ -8,7 +8,6 @@ import (
 
 	"github.com/dearcode/crab/http/client"
 	"github.com/dearcode/crab/http/server"
-	_ "github.com/dearcode/crab/server"
 )
 
 type regexpTest struct {

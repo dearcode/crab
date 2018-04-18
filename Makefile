@@ -1,8 +1,7 @@
 all: crab
 
 FILES := $$(find . -name '*.go' | grep -vE 'vendor') 
-SOURCE_PATH := orm validation cache server log util
-
+SOURCE_PATH := orm validation cache log util 
 
 golint:
 	go get github.com/golang/lint/golint  
@@ -22,12 +21,7 @@ clean:
 fmt: 
 	@for path in $(SOURCE_PATH); do echo "gofmt -s -l -w $$path";  gofmt -s -l -w $$path;  done;
 
-
-crab:
-	go build -o bin/$@ -ldflags '$(LDFLAGS)' ./main.go
-
-
-test:
+crab: lint
 	@for path in $(SOURCE_PATH); do echo "go test ./$$path"; go test "./"$$path; done;
 
 
