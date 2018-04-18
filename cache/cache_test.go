@@ -10,7 +10,7 @@ func TestCacheActive(t *testing.T) {
 		User string
 		Pass string
 	}{
-		"test@jd.com",
+		"test@mailchina.org",
 		"password",
 	}
 	c := NewCache(2)
@@ -29,7 +29,7 @@ func TestCacheInactive(t *testing.T) {
 		User string
 		Pass string
 	}{
-		"test@jd.com",
+		"test@mailchina.org",
 		"password",
 	}
 	c := NewCache(2)

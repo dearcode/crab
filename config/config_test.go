@@ -16,7 +16,7 @@ var (
 func TestMain(main *testing.M) {
 	data := `
  [db]
-domain    =jd.com
+domain    =mailchina.org
 enable=true
 # test comments
 ;port=3306

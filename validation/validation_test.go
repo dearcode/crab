@@ -366,7 +366,7 @@ func TestAliase(t *testing.T) {
 	}
 
 	valid := Validation{}
-	u := user{Name: "aaaaa@jd.com", kk: "kkk", a: 1}
+	u := user{Name: "aaaaa@mailchina.org", kk: "kkk", a: 1}
 	_, err := valid.Valid(u)
 	t.Logf("%+v", err)
 }

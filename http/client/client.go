@@ -23,11 +23,12 @@ type HTTPClient struct {
 }
 
 type StatusError struct {
-	Code int
+	Code    int
+	Message string
 }
 
 func (se *StatusError) Error() string {
-	return fmt.Sprintf("HTTP Status %v", se.Code)
+	return fmt.Sprintf("HTTP Status %v %s", se.Code, se.Message)
 }
 
 func (c *HTTPClient) dial(network, addr string) (net.Conn, error) {
@@ -114,7 +115,7 @@ func (c HTTPClient) do(method, url string, headers map[string]string, body []byt
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.Trace(&StatusError{resp.StatusCode})
+		return nil, errors.Trace(&StatusError{Code: resp.StatusCode, Message: string(data)})
 	}
 
 	return data, nil

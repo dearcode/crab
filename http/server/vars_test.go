@@ -9,7 +9,7 @@ import (
 
 func TestVarsForm(t *testing.T) {
 	url := "http://www.baidu.com/test/"
-	body := ioutil.NopCloser(bytes.NewBufferString("email=test@jd.com&passwd=1qaz"))
+	body := ioutil.NopCloser(bytes.NewBufferString("email=test@mailchina.org&passwd=1qaz"))
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -32,7 +32,7 @@ func TestVarsHeader(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	req.Header.Add("Email", "test@jd.com")
+	req.Header.Add("Email", "test@mailchina.org")
 	req.Header.Add("Passwd", "1qaz")
 
 	result := struct {
@@ -46,7 +46,7 @@ func TestVarsHeader(t *testing.T) {
 }
 
 func TestVarsUrl(t *testing.T) {
-	url := "http://www.baidu.com/test/?email=test@jd.com&passwd=1qaz"
+	url := "http://www.baidu.com/test/?email=test@mailchina.org&passwd=1qaz"
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -64,7 +64,7 @@ func TestVarsUrl(t *testing.T) {
 
 func TestVarsJSON(t *testing.T) {
 	url := "http://www.baidu.com/test/"
-	body := ioutil.NopCloser(bytes.NewBufferString(`{"email":"test@jd.com","passwd":"1qaz"}`))
+	body := ioutil.NopCloser(bytes.NewBufferString(`{"email":"test@mailchina.org","passwd":"1qaz"}`))
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
 		t.Fatal(err.Error())
