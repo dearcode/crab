@@ -2,7 +2,7 @@
 crab log 是一个轻量级log库，支持不同级别不同颜色输出，按天滚动输出日志文件等常用日志功能  
 
 ## Example  
-[![Example Output](doc/log_test.png)](log/log_test.go)  
+[![Example Output](../doc/log_test.png)](log_test.go)  
 
 ```go
 package log 
