@@ -16,6 +16,11 @@ func GetLogLevel() Level {
 	return mlog.level
 }
 
+//GetLogger 获取当前日志对象.
+func GetLogger() *Logger {
+	return mlog
+}
+
 //Info .
 func Info(v ...interface{}) {
 	mlog.write(LogInfo, fmt.Sprint(v...))
