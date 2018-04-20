@@ -1,6 +1,7 @@
 package log
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"os"
@@ -9,19 +10,30 @@ import (
 	"time"
 )
 
+type pos struct {
+	file     string
+	function string
+}
+
 type Logger struct {
-	out   *os.File
-	level LogLevel
-	color bool
-	mu    sync.Mutex
+	rolling  bool
+	fileName string
+	fileTime time.Time
+	file     *os.File
+	out      *bufio.Writer
+	level    LogLevel
+	color    bool
+	posCache map[uintptr]pos
+	mu       sync.Mutex
 }
 
 //NewLogger 创建日志对象.
 func NewLogger() *Logger {
 	return &Logger{
-		out:   os.Stdout,
-		level: LogDebug,
-		color: true,
+		out:      bufio.NewWriter(os.Stdout),
+		level:    LogDebug,
+		color:    true,
+		posCache: make(map[uintptr]pos),
 	}
 }
 
@@ -31,38 +43,46 @@ func (l *Logger) SetColor(on bool) *Logger {
 	return l
 }
 
+//SetRolling 每天生成一个文件.
+func (l *Logger) SetRolling(on bool) *Logger {
+	l.rolling = on
+	return l
+}
+
+//SetOutputFile 初始化时设置输出文件.
+func (l *Logger) SetOutputFile(path string) *Logger {
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		panic(fmt.Sprintf("open %s error:%v", path, err.Error()))
+	}
+
+	now, _ := time.ParseInLocation("20060102", time.Now().Format("20060102"), time.Local)
+	l.fileTime = now.Add(time.Hour * 24)
+	l.file = f
+	l.fileName = path
+	l.out = bufio.NewWriter(f)
+
+	return l
+}
+
 //SetLevel 设置日志级别.
-func (l *Logger) SetLevel(level LogLevel) {
+func (l *Logger) SetLevel(level LogLevel) *Logger {
 	l.level = level
+	return l
 }
 
 //SetLevelByString 设置字符串格式的日志级别.
-func (l *Logger) SetLevelByString(level string) {
+func (l *Logger) SetLevelByString(level string) *Logger {
 	l.level = StringToLogLevel(level)
+	return l
 }
 
-type pos struct {
-	file string
-	line int
-	name string
-}
-
-type posCache struct {
-	ps map[uintptr]pos
-	sync.RWMutex
-}
-
-var mpc = posCache{ps: make(map[uintptr]pos)}
-
-func (l *Logger) caller() (string, int, string) {
+func (l *Logger) caller() (string, string) {
 	pc, file, line, _ := runtime.Caller(3)
 
-	mpc.RLock()
-	p, ok := mpc.ps[pc]
-	mpc.RUnlock()
-
+	p, ok := l.posCache[pc]
 	if ok {
-		return p.file, p.line, p.name
+		return p.file, p.function
 	}
 
 	name := runtime.FuncForPC(pc).Name()
@@ -73,11 +93,25 @@ func (l *Logger) caller() (string, int, string) {
 		file = file[i+1:]
 	}
 
-	mpc.Lock()
-	mpc.ps[pc] = pos{file: file, line: line, name: name}
-	mpc.Unlock()
+	p = pos{file: fmt.Sprintf("%s:%d", file, line), function: name}
+	l.posCache[pc] = p
 
-	return file, line, name
+	return p.file, p.function
+}
+
+func (l *Logger) rotate(now time.Time) {
+	if !l.rolling || l.file == nil || now.Before(l.fileTime) {
+		return
+	}
+
+	l.out.Flush()
+	l.file.Close()
+
+	oldFile := l.fileName + time.Now().Format("20060102")
+
+	os.Rename(l.fileName, oldFile)
+
+	l.SetOutputFile(l.fileName)
 }
 
 func (l *Logger) write(t LogLevel, format string, argv ...interface{}) {
@@ -85,28 +119,43 @@ func (l *Logger) write(t LogLevel, format string, argv ...interface{}) {
 		return
 	}
 
-	date := time.Now().Format("2006/01/02 15:04:05")
+	l.mu.Lock()
+	defer l.mu.Unlock()
 
-	file, line, name := l.caller()
+	now := time.Now()
+	l.rotate(now)
+	date := now.Format("2006/01/02 15:04:05")
 
-	//时间，源码文件，源码列
-	fmt.Fprintf(l.out, "%s %s:%d ", date, file, line)
+	file, function := l.caller()
+
+	//时间，源码文件和行号
+	l.out.WriteString(date)
+	l.out.WriteString(" ")
+	l.out.WriteString(file)
+	l.out.WriteString(" ")
+
 	if l.color {
 		//颜色开始
-		fmt.Fprint(l.out, t.Color())
+		l.out.WriteString(t.Color())
 	}
 
-	//函数名
-	fmt.Fprintf(l.out, "%s %s ", t.String(), name)
+	//日志级别
+	l.out.WriteString(t.String())
 
+	//函数名
+	l.out.WriteString(function)
+
+	//日志正文
 	fmt.Fprintf(l.out, format, argv...)
 
 	if l.color {
 		//颜色结束
-		fmt.Fprint(l.out, "\033[0m")
+		l.out.WriteString("\033[0m")
 	}
 
 	l.out.WriteString("\n")
+
+	l.out.Flush()
 }
 
 func (l *Logger) Info(v ...interface{}) {

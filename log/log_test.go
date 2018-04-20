@@ -13,7 +13,15 @@ func TestLog(t *testing.T) {
 	l := NewLogger()
 	l.Info("logger 2222222222")
 	l.Errorf("logger color %v xxxxxx", time.Now().UnixNano())
-    l.SetColor(false)
+	l.SetColor(false)
 	l.Errorf("logger no color %v yyyyyy", time.Now().UnixNano())
 	Infof("%v default has color test log", time.Now())
+
+	l.SetOutputFile("./vvv.log").SetRolling(true)
+	l.Infof("vvvvvvvvv")
+
+	for i := 0; i < 999999999; i++ {
+		time.Sleep(time.Second)
+		l.Info(time.Now())
+	}
 }

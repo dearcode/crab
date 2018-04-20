@@ -2,10 +2,9 @@ package log
 
 import (
 	"fmt"
-	"os"
 )
 
-var mlog = &Logger{out: os.Stdout, level: LogDebug, color: true}
+var mlog = NewLogger()
 
 func SetLevel(level LogLevel) {
 	mlog.SetLevel(level)
@@ -24,7 +23,7 @@ func Infof(format string, v ...interface{}) {
 }
 
 func Debug(v ...interface{}) {
-	mlog.write(LogDebug,fmt.Sprint( v...))
+	mlog.write(LogDebug, fmt.Sprint(v...))
 }
 
 func Debugf(format string, v ...interface{}) {
@@ -32,7 +31,7 @@ func Debugf(format string, v ...interface{}) {
 }
 
 func Warning(v ...interface{}) {
-	mlog.write(LogWarning, fmt.Sprint( v...))
+	mlog.write(LogWarning, fmt.Sprint(v...))
 }
 
 func Warningf(format string, v ...interface{}) {
@@ -40,7 +39,7 @@ func Warningf(format string, v ...interface{}) {
 }
 
 func Error(v ...interface{}) {
-	mlog.write(LogError, fmt.Sprint( v...))
+	mlog.write(LogError, fmt.Sprint(v...))
 }
 
 func Errorf(format string, v ...interface{}) {
@@ -48,7 +47,7 @@ func Errorf(format string, v ...interface{}) {
 }
 
 func Fatal(v ...interface{}) {
-	mlog.write(LogFatal, fmt.Sprint( v...))
+	mlog.write(LogFatal, fmt.Sprint(v...))
 }
 
 func Fatalf(format string, v ...interface{}) {
