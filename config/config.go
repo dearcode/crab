@@ -121,6 +121,7 @@ func (c *Config) GetData(s, k string, result interface{}, d interface{}) error {
 	return nil
 }
 
+//LoadConfig 加载文件形式配置文件, 并解析成指定结构.
 func LoadConfig(path string, result interface{}) error {
 	c, err := NewConfig(path)
 	if err != nil {
