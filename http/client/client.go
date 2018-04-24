@@ -2,6 +2,7 @@ package client
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -109,7 +110,22 @@ func (c HTTPClient) do(method, url string, headers map[string]string, body []byt
 	}
 	defer resp.Body.Close()
 
-	data, err := ioutil.ReadAll(resp.Body)
+	c.logger.Errorf("url:%v, response header:%#v", url, resp.Header)
+
+	var data []byte
+
+	switch resp.Header.Get("Content-Encoding") {
+	case "gzip":
+		gr, err := gzip.NewReader(resp.Body)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		data, err = ioutil.ReadAll(gr)
+		gr.Close()
+	default:
+		data, err = ioutil.ReadAll(resp.Body)
+	}
+
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

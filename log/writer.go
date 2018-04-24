@@ -129,6 +129,9 @@ func (l *Logger) rotate(now time.Time) {
 }
 
 func (l *Logger) write(t Level, format string, argv ...interface{}) {
+    if l == nil {
+        return
+    }
 	if t > l.level {
 		return
 	}
