@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/juju/errors"
@@ -112,22 +113,21 @@ func (c HTTPClient) do(method, url string, headers map[string]string, body []byt
 
 	c.logger.Errorf("url:%v, response header:%#v", url, resp.Header)
 
-	var data []byte
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
 
-	switch resp.Header.Get("Content-Encoding") {
-	case "gzip":
-		gr, err := gzip.NewReader(resp.Body)
+	if strings.Contains(resp.Header.Get("Content-Encoding"), "gzip") || strings.Contains(resp.Header.Get("Content-Type"), "gzip") {
+		gr, err := gzip.NewReader(bytes.NewBuffer(data))
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
+		defer gr.Close()
 		data, err = ioutil.ReadAll(gr)
-		gr.Close()
-	default:
-		data, err = ioutil.ReadAll(resp.Body)
-	}
-
-	if err != nil {
-		return nil, errors.Trace(err)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
 	}
 
 	if resp.StatusCode != http.StatusOK {
