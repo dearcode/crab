@@ -297,7 +297,7 @@ func (s *httpServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h, ctx := getHandler(r.Method, r.URL.Path)
 	if h == nil {
 		log.Errorf("%v %v %v not found.", r.RemoteAddr, r.Method, r.URL)
-		SendResponse(w, http.StatusNotFound, "invalid request")
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
