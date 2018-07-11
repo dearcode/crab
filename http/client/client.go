@@ -111,8 +111,6 @@ func (c HTTPClient) do(method, url string, headers map[string]string, body []byt
 	}
 	defer resp.Body.Close()
 
-	c.logger.Errorf("url:%v, response header:%#v", url, resp.Header)
-
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, errors.Trace(err)
