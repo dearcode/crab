@@ -29,16 +29,19 @@ func configSplit(raw, sep string) []string {
 }
 
 //NewConfig 加载配置文件.
-func NewConfig(path string) (c *Config, err error) {
-	dat, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
+func NewConfig(path, body string) (c *Config, err error) {
+	if path != "" {
+		dat, err := ioutil.ReadFile(path)
+		if err != nil {
+			return nil, err
+		}
+		body = string(dat)
 	}
 
 	c = &Config{kv: make(map[string]string)}
 	s := ""
 
-	for _, line := range strings.Split(string(dat), "\n") {
+	for _, line := range strings.Split(body, "\n") {
 		line = strings.TrimSpace(line)
 		if len(line) < 3 || line[0] == ';' || line[0] == '#' {
 			continue
@@ -78,8 +81,7 @@ func (c *Config) GetData(s, k string, result interface{}, d interface{}) error {
 	if !ok {
 		//没有对应的key, 这时候要看看有没有default.
 		if d == nil {
-			fmt.Printf("kv:%#v, key:%v\n", c.kv, key)
-			return errors.Annotatef(ErrNotFound, "%v:%v", s, k)
+			return errors.Annotatef(ErrNotFound, "%v->%v", s, k)
 		}
 		rv.Set(reflect.ValueOf(d))
 		return nil
@@ -121,13 +123,98 @@ func (c *Config) GetData(s, k string, result interface{}, d interface{}) error {
 	return nil
 }
 
-//LoadConfig 加载文件形式配置文件, 并解析成指定结构.
-func LoadConfig(path string, result interface{}) error {
-	c, err := NewConfig(path)
+//ParseConfig 解析内存中配置文件.
+func ParseConfig(body string, result interface{}) error {
+	c, err := NewConfig("", body)
 	if err != nil {
 		return errors.Trace(err)
 	}
+	return c.Parse(result)
+}
 
+//LoadConfig 加载文件形式配置文件, 并解析成指定结构.
+func LoadConfig(path string, result interface{}) error {
+	c, err := NewConfig(path, "")
+	if err != nil {
+		return errors.Trace(err)
+	}
+	return c.Parse(result)
+}
+
+func (c Config) getDefault(k reflect.Kind, v string) (interface{}, error) {
+	switch k {
+	case reflect.Uint:
+		d, err := strconv.ParseUint(v, 10, 64)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		return uint(d), nil
+	case reflect.Uint8:
+		d, err := strconv.ParseUint(v, 10, 64)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		return uint8(d), nil
+	case reflect.Uint16:
+		d, err := strconv.ParseUint(v, 10, 64)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		return uint16(d), nil
+	case reflect.Uint32:
+		d, err := strconv.ParseUint(v, 10, 64)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		return uint32(d), nil
+	case reflect.Uint64:
+		return strconv.ParseUint(v, 10, 64)
+	case reflect.Int:
+		d, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		return int(d), nil
+	case reflect.Int8:
+		d, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		return uint8(d), nil
+	case reflect.Int16:
+		d, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		return uint16(d), nil
+	case reflect.Int32:
+		d, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		return uint32(d), nil
+	case reflect.Int64:
+		return strconv.ParseInt(v, 10, 64)
+	case reflect.String:
+		return v, nil
+	case reflect.Bool:
+		return strconv.ParseBool(v)
+	case reflect.Float32:
+		d, err := strconv.ParseFloat(v, 32)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		return float32(d), nil
+	case reflect.Float64:
+		return strconv.ParseFloat(v, 32)
+
+	default:
+		return nil, Errunsupported
+	}
+}
+
+//Parse 根据result结构读配置文件.
+func (c *Config) Parse(result interface{}) error {
 	rt := reflect.TypeOf(result)
 	rv := reflect.ValueOf(result)
 
@@ -154,67 +241,42 @@ func LoadConfig(path string, result interface{}) error {
 			ft = ft.Elem()
 		}
 
-		if ft.Kind() == reflect.Struct {
-			for j := 0; j < ft.NumField(); j++ {
-				sf := ft.Field(j)
-				if f.PkgPath != "" && !f.Anonymous { // unexported
-					continue
-				}
-				sfv := fv.Field(j)
-				if sf.Type.Kind() == reflect.Ptr {
-					sfv = reflect.New(sfv.Elem().Type())
-					fv.Field(j).Set(sfv)
-				}
+		if ft.Kind() != reflect.Struct {
+			continue
+		}
 
-				var d interface{}
-				if v := sf.Tag.Get("default"); v != "" {
-					switch sf.Type.Kind() {
-					case reflect.Uint:
-						d, err = strconv.ParseUint(v, 10, 64)
-						d = uint(d.(uint64))
-					case reflect.Uint8:
-						d, err = strconv.ParseUint(v, 10, 64)
-						d = uint8(d.(uint64))
-					case reflect.Uint16:
-						d, err = strconv.ParseUint(v, 10, 64)
-						d = uint16(d.(uint64))
-					case reflect.Uint32:
-						d, err = strconv.ParseUint(v, 10, 64)
-						d = uint32(d.(uint64))
-					case reflect.Uint64:
-						d, err = strconv.ParseUint(v, 10, 64)
-					case reflect.Int:
-						d, err = strconv.ParseInt(v, 10, 64)
-						d = int(d.(int64))
-					case reflect.Int8:
-						d, err = strconv.ParseInt(v, 10, 64)
-						d = uint8(d.(uint64))
-					case reflect.Int16:
-						d, err = strconv.ParseInt(v, 10, 64)
-						d = uint16(d.(uint64))
-					case reflect.Int32:
-						d, err = strconv.ParseInt(v, 10, 64)
-						d = uint32(d.(uint64))
-					case reflect.Int64:
-						d, err = strconv.ParseInt(v, 10, 64)
-					case reflect.String:
-						d = v
-					case reflect.Bool:
-						d, err = strconv.ParseBool(v)
-					case reflect.Float32, reflect.Float64:
-						d, err = strconv.ParseFloat(v, 32)
+		segment := f.Name
+		if name := f.Tag.Get("cfg_key"); name != "" {
+			segment = name
+		}
 
-					default:
-						return Errunsupported
-					}
-				}
+		for j := 0; j < ft.NumField(); j++ {
+			sf := ft.Field(j)
+			if f.PkgPath != "" && !f.Anonymous { // unexported
+				continue
+			}
+			sfv := fv.Field(j)
+			if sf.Type.Kind() == reflect.Ptr {
+				sfv = reflect.New(sfv.Elem().Type())
+				fv.Field(j).Set(sfv)
+			}
+
+			var cfgDefault interface{}
+			if v := sf.Tag.Get("cfg_default"); v != "" {
+				d, err := c.getDefault(sf.Type.Kind(), v)
 				if err != nil {
 					return errors.Trace(err)
 				}
+				cfgDefault = d
+			}
 
-				if err = c.GetData(f.Name, sf.Name, sfv.Addr().Interface(), d); err != nil {
-					return errors.Trace(err)
-				}
+			key := sf.Name
+			if name := sf.Tag.Get("cfg_key"); name != "" {
+				key = name
+			}
+
+			if err := c.GetData(segment, key, sfv.Addr().Interface(), cfgDefault); err != nil {
+				return errors.Trace(err)
 			}
 		}
 	}

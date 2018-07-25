@@ -1,7 +1,6 @@
 package config
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -10,14 +9,10 @@ import (
 
 var (
 	c    *Config
-	path string
-)
-
-func TestMain(main *testing.M) {
-	data := `
+	data = `
  [db]
 domain    =mailchina.org
-enable=true
+db_enable=true
 # test comments
 ;port=3306
 [api]
@@ -25,17 +20,14 @@ enable=true
 enable=T
 headersize=123
 `
-	f, err := ioutil.TempFile("/tmp/", "test_config_")
+)
+
+func TestMain(main *testing.M) {
+	nc, err := NewConfig("", data)
 	if err != nil {
 		panic(err.Error())
 	}
-	f.WriteString(data)
-	path = f.Name()
-	f.Close()
-
-	if c, err = NewConfig(path); err != nil {
-		panic(err.Error())
-	}
+	c = nc
 
 	os.Exit(main.Run())
 }
@@ -67,8 +59,8 @@ func TestConfigBool(t *testing.T) {
 type testConf struct {
 	DB struct {
 		Domain string
-		Port   int `default:"9088"`
-		Enable bool
+		Port   int  `cfg_default:"9088"`
+		Enable bool `cfg_key:"db_enable"`
 	}
 
 	API struct {
@@ -80,7 +72,7 @@ type testConf struct {
 
 func TestConfigStruct(t *testing.T) {
 	var conf testConf
-	if err := LoadConfig(path, &conf); err != nil {
+	if err := ParseConfig(data, &conf); err != nil {
 		t.Fatalf(errors.ErrorStack(err))
 	}
 	t.Logf("conf:%+v", conf)
