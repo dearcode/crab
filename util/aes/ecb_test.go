@@ -1,28 +1,30 @@
 package aes
 
 import (
+	"github.com/juju/errors"
 	"testing"
 )
 
 func TestAes(t *testing.T) {
 	src := "test"
-	key := []byte("dbsjdcom\x00\x00\x00\x00\x00\x00\x00\x00")
+	key := "1qaz@WSX"
 
 	crypted, err := Encrypt(src, key)
 	if err != nil {
-		t.Fatalf("AesEncrypt error:%s", err.Error())
+		t.Fatalf("AesEncrypt error:%s", errors.ErrorStack(err))
 	}
-	deSrc, err := Decrypt(crypted, []byte(key))
+	t.Logf("dest:%v", crypted)
+	deSrc, err := Decrypt(crypted, key)
 	if err != nil {
 		t.Fatalf("AesDecrypt error:%s", err.Error())
 	}
-	t.Logf("desc:%v", deSrc)
+	t.Logf("desc:%s", deSrc)
 }
 
 func TestDesPanic(t *testing.T) {
-	key := []byte("dbsjdcom\x00\x00\x00\x00\x00\x00\x00\x00")
-	crypted := "fDmxIdK9p3oEyQoL1Bwz4Fakia3Y4Qn1SF8podapMFU="
-	deSrc, err := Decrypt(crypted, []byte(key))
+	key := "1qaz@WSX"
+	crypted := "hX0Y5u-EkggQstomvCXgQw=="
+	deSrc, err := Decrypt(crypted, key)
 	if err != nil {
 		t.Logf("err:%v", err)
 	}

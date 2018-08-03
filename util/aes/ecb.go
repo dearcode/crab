@@ -5,108 +5,78 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/base64"
+	"fmt"
+	"strings"
 
 	"github.com/juju/errors"
 )
 
-//Decrypt 解密.
-func Decrypt(crypted string, key []byte) ([]byte, error) {
-	raw, err := base64.StdEncoding.DecodeString(crypted)
-	if err != nil {
-		return nil, errors.Trace(err)
+func byteKey(key string) []byte {
+	for i := 16; i < 33; i += 8 {
+		key += strings.Repeat("\x00", i-len(key))
+		if len(key) == i {
+			break
+		}
 	}
-
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-
-	blockMode := NewECBDecrypter(block)
-	data := make([]byte, len(raw))
-	blockMode.CryptBlocks(data, raw)
-	data = pkcs5UnPadding(data)
-
-	return data, nil
+	return []byte(key)
 }
 
-//Encrypt 加密.
-func Encrypt(src string, key []byte) (string, error) {
-	block, err := aes.NewCipher(key)
+// Encrypt aes 加密.
+func Encrypt(encodeStr string, key string) (string, error) {
+	encodeBytes := []byte(encodeStr)
+	encodeKey := byteKey(key)
+	block, err := aes.NewCipher(encodeKey)
 	if err != nil {
-		return "", err
+		return "", errors.Trace(err)
 	}
+	blockSize := block.BlockSize()
+	encodeBytes = pkcs5Padding(encodeBytes, blockSize)
+	blockMode := cipher.NewCBCEncrypter(block, encodeKey[:blockSize])
+	crypted := make([]byte, len(encodeBytes))
+	blockMode.CryptBlocks(crypted, encodeBytes)
 
-	ecb := NewECBEncrypter(block)
-	content := pkcs5Padding([]byte(src), block.BlockSize())
-	buf := make([]byte, len(content))
-	ecb.CryptBlocks(buf, content)
-
-	return base64.StdEncoding.EncodeToString(buf), nil
+	return base64.URLEncoding.EncodeToString(crypted), nil
 }
 
+// Decrypt aes 解密.
+func Decrypt(decodeStr string, key string) (string, error) {
+	decodeKey := byteKey(key)
+	decodeBytes, err := base64.URLEncoding.DecodeString(decodeStr)
+	if err != nil {
+		return "", errors.Trace(err)
+	}
+	block, err := aes.NewCipher(decodeKey)
+	if err != nil {
+		return "", errors.Trace(err)
+	}
+	blockSize := block.BlockSize()
+	blockMode := cipher.NewCBCDecrypter(block, decodeKey[:blockSize])
+	origData := make([]byte, len(decodeBytes))
+	fmt.Printf("ori:%d, dec:%d\n", len(origData), len(decodeBytes))
+	blockMode.CryptBlocks(origData, decodeBytes)
+	origData, err = pkcs5UnPadding(origData)
+	if err != nil {
+		return "", errors.Trace(err)
+	}
+
+	return string(origData), nil
+}
+
+// pkcs5Padding pkcs5 添加数据.
 func pkcs5Padding(ciphertext []byte, blockSize int) []byte {
 	padding := blockSize - len(ciphertext)%blockSize
 	padtext := bytes.Repeat([]byte{byte(padding)}, padding)
 	return append(ciphertext, padtext...)
 }
 
-func pkcs5UnPadding(origData []byte) []byte {
+// pkcs5UnPadding pkcs5 删除数据.
+func pkcs5UnPadding(origData []byte) ([]byte, error) {
 	length := len(origData)
-	// 去掉最后一个字节 unpadding 次
+
+	if length <= 0 {
+		return nil, errors.New("pkcs5Padding len(origData) <= 0 error")
+	}
+
 	unpadding := int(origData[length-1])
-	return origData[:(length - unpadding)]
-}
-
-type ecb struct {
-	b         cipher.Block
-	blockSize int
-}
-
-func newECB(b cipher.Block) *ecb {
-	return &ecb{
-		b:         b,
-		blockSize: b.BlockSize(),
-	}
-}
-
-type ecbEncrypter ecb
-
-// NewECBEncrypter returns a BlockMode which encrypts in electronic code book mode, using the given Block.
-func NewECBEncrypter(b cipher.Block) cipher.BlockMode {
-	return (*ecbEncrypter)(newECB(b))
-}
-func (x *ecbEncrypter) BlockSize() int { return x.blockSize }
-func (x *ecbEncrypter) CryptBlocks(dst, src []byte) {
-	if len(src)%x.blockSize != 0 {
-		panic("crypto/cipher: input not full blocks")
-	}
-	if len(dst) < len(src) {
-		panic("crypto/cipher: output smaller than input")
-	}
-	for len(src) > 0 {
-		x.b.Encrypt(dst, src[:x.blockSize])
-		src = src[x.blockSize:]
-		dst = dst[x.blockSize:]
-	}
-}
-
-type ecbDecrypter ecb
-
-// NewECBDecrypter returns a BlockMode which decrypts in electronic code book mode, using the given Block.
-func NewECBDecrypter(b cipher.Block) cipher.BlockMode {
-	return (*ecbDecrypter)(newECB(b))
-}
-func (x *ecbDecrypter) BlockSize() int { return x.blockSize }
-func (x *ecbDecrypter) CryptBlocks(dst, src []byte) {
-	if len(src)%x.blockSize != 0 {
-		panic("crypto/cipher: input not full blocks")
-	}
-	if len(dst) < len(src) {
-		panic("crypto/cipher: output smaller than input")
-	}
-	for len(src) > 0 {
-		x.b.Decrypt(dst, src[:x.blockSize])
-		src = src[x.blockSize:]
-		dst = dst[x.blockSize:]
-	}
+	return origData[:(length - unpadding)], nil
 }
