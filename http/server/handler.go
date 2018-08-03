@@ -17,10 +17,6 @@ import (
 	"github.com/dearcode/crab/log"
 )
 
-var (
-	server = newHTTPServer()
-)
-
 type handlerRegexp struct {
 	keys []string
 	exp  *regexp.Regexp
@@ -44,6 +40,19 @@ type httpServer struct {
 	filter   Filter
 	listener net.Listener
 	mu       sync.RWMutex
+}
+
+var (
+	server  = newHTTPServer()
+	keysExp *regexp.Regexp
+)
+
+func init() {
+	exp, err := regexp.Compile(`{(\w+)?}`)
+	if err != nil {
+		panic(err.Error())
+	}
+	keysExp = exp
 }
 
 func newHTTPServer() *httpServer {
@@ -83,9 +92,24 @@ func Register(obj interface{}) error {
 	return register(obj, "", false)
 }
 
+//RegisterMust 只要struct实现了Get(),Post(),Delete(),Put()接口就可以自动注册, 如果添加失败panic.
+func RegisterMust(obj interface{}) {
+	if err := register(obj, "", false); err != nil {
+		panic(err.Error())
+	}
+
+}
+
 //RegisterPath 注册url完全匹配.
 func RegisterPath(obj interface{}, path string) error {
 	return register(obj, path, false)
+}
+
+//RegisterPathMust 注册url完全匹配，如果遇到错误panic.
+func RegisterPathMust(obj interface{}, path string) {
+	if err := register(obj, path, false); err != nil {
+		panic(err.Error())
+	}
 }
 
 //RegisterHandler 注册自定义url完全匹配.
@@ -114,16 +138,11 @@ func RegisterPrefix(obj interface{}, path string) error {
 	return register(obj, path, true)
 }
 
-var (
-	keysExp *regexp.Regexp
-)
-
-func init() {
-	exp, err := regexp.Compile(`{(\w+)?}`)
-	if err != nil {
+//RegisterPrefixMust 注册url前缀并保证成功.
+func RegisterPrefixMust(obj interface{}, path string) {
+	if err := RegisterPrefix(obj, path); err != nil {
 		panic(err.Error())
 	}
-	keysExp = exp
 }
 
 func newHandlerRegexp(h handler) handlerRegexp {

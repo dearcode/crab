@@ -11,7 +11,7 @@ import (
 
 	"github.com/dearcode/crab/log"
 	"github.com/dearcode/crab/meta"
-	"github.com/dearcode/crab/util"
+	"github.com/dearcode/crab/util/str"
 )
 
 //Stmt db stmt.
@@ -169,9 +169,9 @@ func (s *Stmt) SQLColumn(rt reflect.Type, table string) string {
 		case reflect.Struct:
 			if f.Tag.Get("db_table") == "one" {
 				s.table += ","
-				s.table += util.FieldEscape(f.Name)
-				bs.WriteString(s.SQLColumn(f.Type, util.FieldEscape(f.Name)))
-				field := util.FieldEscape(f.Name)
+				s.table += str.FieldEscape(f.Name)
+				bs.WriteString(s.SQLColumn(f.Type, str.FieldEscape(f.Name)))
+				field := str.FieldEscape(f.Name)
 				s.addWhere(fmt.Sprintf("%s.%s_id = %s.id", table, field, field))
 				continue
 			}
@@ -180,7 +180,7 @@ func (s *Stmt) SQLColumn(rt reflect.Type, table string) string {
 		}
 		name := f.Tag.Get("db")
 		if name == "" {
-			name = util.FieldEscape(f.Name)
+			name = str.FieldEscape(f.Name)
 		}
 		if !strings.Contains(name, ".") {
 			fmt.Fprintf(bs, "%s.", table)
@@ -216,16 +216,16 @@ func (s *Stmt) firstTable() string {
 
 // addRelation 添加多表关联条件
 func (s *Stmt) addRelation(t1, t2 string, id interface{}) *Stmt {
-	t1 = util.FieldEscape(t1)
-	t2 = util.FieldEscape(t2)
+	t1 = str.FieldEscape(t1)
+	t2 = str.FieldEscape(t2)
 	s.addWhere(fmt.Sprintf("id in (select %s_id from %s_%s_relation where %s_id=%d)", t1, t2, t1, t2, id))
 	return s
 }
 
 // addOne2More 添加一对多关联条件
 func (s *Stmt) addOne2More(t1, t2 string, id interface{}) *Stmt {
-	t1 = util.FieldEscape(t1)
-	t2 = util.FieldEscape(t2)
+	t1 = str.FieldEscape(t1)
+	t2 = str.FieldEscape(t2)
 	s.addWhere(fmt.Sprintf("%s.%s_id=%d", t1, t2, id))
 	return s
 }
@@ -325,14 +325,14 @@ func (s *Stmt) Query(result interface{}) error {
 			switch f.Tag.Get("db_table") {
 			case "more":
 				//填充一对多结果，每次去查询
-				if err = NewStmt(s.db, util.FieldEscape(f.Name)).addRelation(f.Name, s.firstTable(), id).Query(lr); err != nil {
+				if err = NewStmt(s.db, str.FieldEscape(f.Name)).addRelation(f.Name, s.firstTable(), id).Query(lr); err != nil {
 					if errors.Cause(err) != meta.ErrNotFound {
 						return errors.Trace(err)
 					}
 				}
 			case "one2more":
 				//填充一对多结果，每次去查询
-				if err = NewStmt(s.db, util.FieldEscape(f.Name)).addOne2More(f.Name, s.firstTable(), id).Query(lr); err != nil {
+				if err = NewStmt(s.db, str.FieldEscape(f.Name)).addOne2More(f.Name, s.firstTable(), id).Query(lr); err != nil {
 					if errors.Cause(err) != meta.ErrNotFound {
 						return errors.Trace(err)
 					}
@@ -398,7 +398,7 @@ func (s *Stmt) SQLInsert(rt reflect.Type, rv reflect.Value) (sql string, refs []
 		}
 		name := rt.Field(i).Tag.Get("db")
 		if name == "" {
-			name = util.FieldEscape(rt.Field(i).Name)
+			name = str.FieldEscape(rt.Field(i).Name)
 		}
 
 		bs.WriteString(name)
@@ -444,7 +444,7 @@ func (s *Stmt) SQLUpdate(rt reflect.Type, rv reflect.Value) (sql string, refs []
 
 		name := rt.Field(i).Tag.Get("db")
 		if name == "" {
-			name = util.FieldEscape(rt.Field(i).Name)
+			name = str.FieldEscape(rt.Field(i).Name)
 		}
 
 		fmt.Fprintf(bs, "`%s`=?, ", name)

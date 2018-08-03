@@ -22,6 +22,6 @@ fmt:
 	@for path in $(SOURCE_PATH); do echo "gofmt -s -l -w $$path";  gofmt -s -l -w $$path;  done;
 
 crab: lint
-	@for path in $(SOURCE_PATH); do echo "go test ./$$path"; go test "./"$$path; done;
+	@for path in $(SOURCE_PATH); do echo "go test ./$$path"; go test "./"$$path/...; done;
 
 
