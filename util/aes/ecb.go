@@ -5,7 +5,6 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/base64"
-	"fmt"
 	"strings"
 
 	"github.com/juju/errors"
@@ -52,7 +51,6 @@ func Decrypt(decodeStr string, key string) (string, error) {
 	blockSize := block.BlockSize()
 	blockMode := cipher.NewCBCDecrypter(block, decodeKey[:blockSize])
 	origData := make([]byte, len(decodeBytes))
-	fmt.Printf("ori:%d, dec:%d\n", len(origData), len(decodeBytes))
 	blockMode.CryptBlocks(origData, decodeBytes)
 	origData, err = pkcs5UnPadding(origData)
 	if err != nil {
@@ -72,11 +70,13 @@ func pkcs5Padding(ciphertext []byte, blockSize int) []byte {
 // pkcs5UnPadding pkcs5 删除数据.
 func pkcs5UnPadding(origData []byte) ([]byte, error) {
 	length := len(origData)
-
-	if length <= 0 {
-		return nil, errors.New("pkcs5Padding len(origData) <= 0 error")
+	if length < 1 {
+		return nil, errors.New("origData is empty")
 	}
 
 	unpadding := int(origData[length-1])
+	if unpadding > length {
+		return nil, errors.New("invalid origData")
+	}
 	return origData[:(length - unpadding)], nil
 }
