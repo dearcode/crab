@@ -62,7 +62,7 @@ func (c *HTTPClient) dial(network, addr string) (net.Conn, error) {
 
 const (
 	defaultRetryTimes = 3
-	defaultTimeout    = 15
+	defaultTimeout    = 300
 )
 
 //New 创建一个带超时和重试控制的http client, 单位秒.
@@ -77,7 +77,7 @@ func New() *HTTPClient {
 	return hc
 }
 
-//Timeout 设置超时时间，单位:秒, 默认15秒.
+//Timeout 设置超时时间，单位:秒, 默认300秒.
 func (c *HTTPClient) Timeout(t int) *HTTPClient {
 	c.timeout = time.Duration(t) * time.Second
 	return c
