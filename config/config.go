@@ -252,9 +252,10 @@ func (c *Config) Parse(result interface{}) error {
 
 		for j := 0; j < ft.NumField(); j++ {
 			sf := ft.Field(j)
-			if f.PkgPath != "" && !f.Anonymous { // unexported
+			if sf.PkgPath != "" && !sf.Anonymous { // unexported
 				continue
 			}
+
 			sfv := fv.Field(j)
 			if sf.Type.Kind() == reflect.Ptr {
 				sfv = reflect.New(sfv.Elem().Type())
