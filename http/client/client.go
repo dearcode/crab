@@ -171,7 +171,7 @@ func (c HTTPClient) PostJSON(url string, headers map[string]string, data interfa
 		return errors.Trace(err)
 	}
 
-	c.logger.Debugf("url:%v, resp:%s", url, buf)
+	c.logger.Debugf("url:%v, req:%+v, resp:%s", url, data, buf)
 	return json.Unmarshal(buf, resp)
 }
 
