@@ -1,7 +1,7 @@
 package uuid
 
 import (
-	"encoding/base64"
+	"encoding/base32"
 	"encoding/binary"
 	"net"
 	"os"
@@ -35,5 +35,5 @@ func init() {
 func String() string {
 	binary.BigEndian.PutUint64(buf[4:], uint64(time.Now().Unix()))
 	binary.BigEndian.PutUint32(buf[12:], atomic.AddUint32(&inc, 1))
-	return base64.RawURLEncoding.EncodeToString(buf)
+	return base32.HexEncoding.WithPadding(base32.NoPadding).EncodeToString(buf)
 }
