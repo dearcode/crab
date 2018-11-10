@@ -6,7 +6,8 @@ import (
 
 func TestUUID(t *testing.T) {
 	for i := 0; i < 1000; i++ {
-		t.Logf("%s", String())
+		id := String()
+		info, _ := Info(id)
+		t.Logf("%s, %s", id, info)
 	}
-
 }
