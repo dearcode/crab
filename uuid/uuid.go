@@ -10,9 +10,12 @@ import (
 	"time"
 )
 
+const encodeStr = "123456789abcdefghijklmnpqrstuvxy"
+
 var (
-	seq uint32
-	buf = make([]byte, 14)
+	seq      uint32
+	initBuf  = make([]byte, 14)
+	encoding = base32.NewEncoding(encodeStr).WithPadding(base32.NoPadding)
 )
 
 func init() {
@@ -22,29 +25,30 @@ func init() {
 			if !i.IP.IsLoopback() {
 				i4 := i.IP.To4()
 				if len(i4) == net.IPv4len {
-					buf[4] = i.IP.To4()[0]
-					buf[5] = i.IP.To4()[1]
-					buf[6] = i.IP.To4()[2]
-					buf[7] = i.IP.To4()[3]
+					initBuf[4] = i.IP.To4()[0]
+					initBuf[5] = i.IP.To4()[1]
+					initBuf[6] = i.IP.To4()[2]
+					initBuf[7] = i.IP.To4()[3]
 					break
 				}
 			}
 		}
 	}
-	binary.LittleEndian.PutUint16(buf[8:], uint16(os.Getpid()))
+	binary.LittleEndian.PutUint16(initBuf[8:], uint16(os.Getpid()))
 }
 
 //String 生成字符串的uuid
 func String() string {
+	buf := initBuf[:]
 	binary.BigEndian.PutUint32(buf[0:], uint32(time.Now().UTC().Unix()))
 	binary.BigEndian.PutUint32(buf[10:], atomic.AddUint32(&seq, 1))
-	return base32.HexEncoding.WithPadding(base32.NoPadding).EncodeToString(buf)
+	return encoding.EncodeToString(buf)
 }
 
 //Decode 解析uuid字符串，返回具体细节.
 func Decode(s string) (ip string, pid int, tm time.Time, seq uint32, err error) {
 	var buf []byte
-	buf, err = base32.HexEncoding.WithPadding(base32.NoPadding).DecodeString(s)
+	buf, err = encoding.DecodeString(s)
 	if err != nil {
 		return
 	}
