@@ -49,8 +49,12 @@ func (db *DB) GetConnection() (*sql.DB, error) {
 	return stmtDB, nil
 }
 
+const (
+	maxAllowedPacket = 134217728
+)
+
 func (db *DB) getDSN() string {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/", db.UserName, db.Passwd, db.IP, db.Port)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/?maxAllowedPacket=%d", db.UserName, db.Passwd, db.IP, db.Port, maxAllowedPacket)
 
 	if len(db.DBName) > 0 {
 		dsn = fmt.Sprintf("%s%s", dsn, db.DBName)
