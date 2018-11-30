@@ -49,6 +49,10 @@ func (db *DB) GetConnection() (*sql.DB, error) {
 	return stmtDB, nil
 }
 
+const (
+	maxAllowedPacket = 134217728
+)
+
 func (db *DB) getDSN() string {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", db.UserName, db.Passwd, db.IP, db.Port, db.DBName)
 
@@ -61,6 +65,7 @@ func (db *DB) getDSN() string {
 
 func (db *DB) getOpt() string {
 	var opts []string
+
 	if len(db.Charset) > 0 {
 		opts = append(opts, fmt.Sprintf("charset=%s", db.Charset))
 	}
@@ -68,6 +73,8 @@ func (db *DB) getOpt() string {
 	if db.Timeout > 0 {
 		opts = append(opts, fmt.Sprintf("timeout=%ds", db.Timeout))
 	}
+
+	opts = append(opts, fmt.Sprintf("maxAllowedPacket=%d", maxAllowedPacket))
 
 	return strings.Join(opts, "&")
 }
