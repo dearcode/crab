@@ -17,7 +17,7 @@ type DB struct {
 	UserName string
 	Passwd   string
 	Charset  string
-	TimeOut  int
+	Timeout  int
 }
 
 //NewDB create db instance, timeout 单位:秒.
@@ -29,7 +29,7 @@ func NewDB(ip string, port int, dbName, user, pass, charset string, timeout int)
 		UserName: user,
 		Passwd:   pass,
 		Charset:  charset,
-		TimeOut:  timeout,
+		Timeout:  timeout,
 	}
 }
 
@@ -50,15 +50,10 @@ func (db *DB) GetConnection() (*sql.DB, error) {
 }
 
 func (db *DB) getDSN() string {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/", db.UserName, db.Passwd, db.IP, db.Port)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", db.UserName, db.Passwd, db.IP, db.Port, db.DBName)
 
-	if len(db.DBName) > 0 {
-		dsn = fmt.Sprintf("%s%s", dsn, db.DBName)
-
-		optStr := db.getOpt()
-		if len(optStr) > 0 {
-			dsn = fmt.Sprintf("%s?%s", dsn, optStr)
-		}
+	if optStr := db.getOpt(); optStr != "" {
+		dsn = fmt.Sprintf("%s?%s", dsn, optStr)
 	}
 
 	return dsn
@@ -70,8 +65,8 @@ func (db *DB) getOpt() string {
 		opts = append(opts, fmt.Sprintf("charset=%s", db.Charset))
 	}
 
-	if db.TimeOut > 0 {
-		opts = append(opts, fmt.Sprintf("timeout=%ds", db.TimeOut))
+	if db.Timeout > 0 {
+		opts = append(opts, fmt.Sprintf("timeout=%ds", db.Timeout))
 	}
 
 	return strings.Join(opts, "&")
