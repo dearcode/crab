@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/juju/errors"
 	//mysql
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -38,12 +39,12 @@ func (db *DB) GetConnection() (*sql.DB, error) {
 	dsn := db.getDSN()
 	stmtDB, err := sql.Open("mysql", dsn)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	stmtDB.SetMaxOpenConns(0)
 	if err := stmtDB.Ping(); err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	return stmtDB, nil
