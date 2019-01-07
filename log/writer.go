@@ -115,7 +115,6 @@ func (l *Logger) caller() (string, string) {
 }
 
 func (l *Logger) rotate(now time.Time) {
-	fmt.Printf("now:%v, fileTime:%v\n", now, l.fileTime)
 	if !l.rolling || l.file == nil || now.Before(l.fileTime) {
 		return
 	}
