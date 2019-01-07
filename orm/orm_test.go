@@ -10,6 +10,24 @@ import (
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
+func TestORMStructDistinct(t *testing.T) {
+	expect := "select userinfo.id, distinct userinfo.user, avg(age), sum(size), userinfo.password from userinfo limit 1"
+	result := struct {
+		ID       int64
+		User     string `db:"user,distinct"`
+		Age      int    `db:"avg(age)"`
+		Size     int    `db:"sum(size)"`
+		Password string
+	}{}
+	sql, err := NewStmt(nil, "userinfo").SQLQueryBuilder(&result)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	if sql != expect {
+		t.Fatalf("expect:%s,\n recv:%s.", expect, sql)
+	}
+}
+
 func TestORMStruct(t *testing.T) {
 	expect := "select userinfo.id, userinfo.user, userinfo.password from userinfo limit 1"
 	result := struct {

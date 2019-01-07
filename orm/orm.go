@@ -178,11 +178,25 @@ func (s *Stmt) SQLColumn(rt reflect.Type, table string) string {
 		case reflect.Slice:
 			continue
 		}
+
+		attr := ""
 		name := f.Tag.Get("db")
+
+		if kv := strings.Split(name, ","); len(kv) == 2 {
+			name = kv[0]
+			attr = kv[1]
+		}
+
 		if name == "" {
 			name = str.FieldEscape(f.Name)
 		}
-		if !strings.Contains(name, ".") {
+
+		switch attr {
+		case "distinct":
+			bs.WriteString("distinct ")
+		}
+
+		if !strings.Contains(name, ".") && !strings.Contains(name, "(") {
 			fmt.Fprintf(bs, "%s.", table)
 		}
 		fmt.Fprintf(bs, "%s, ", name)
