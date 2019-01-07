@@ -1,8 +1,13 @@
 package log
 
 import (
+	"os"
 	"testing"
 	"time"
+)
+
+const (
+	testLogFile = "./test.log"
 )
 
 func TestLog(t *testing.T) {
@@ -18,6 +23,8 @@ func TestLog(t *testing.T) {
 	l.Errorf("logger no color %v yyyyyy", time.Now().UnixNano())
 	Infof("%v default has color test log", time.Now())
 
-	l.SetOutputFile("./vvv.log").SetRolling(true)
+	l.SetOutputFile(testLogFile).SetRolling(true)
 	l.Info(time.Now())
+	os.Remove(testLogFile)
+
 }

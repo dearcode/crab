@@ -7,6 +7,7 @@ import (
 	"os"
 	"runtime"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -114,16 +115,22 @@ func (l *Logger) caller() (string, string) {
 }
 
 func (l *Logger) rotate(now time.Time) {
+	fmt.Printf("now:%v, fileTime:%v\n", now, l.fileTime)
 	if !l.rolling || l.file == nil || now.Before(l.fileTime) {
 		return
 	}
 
 	l.out.Flush()
+
+	oldFile := l.fileName + "." + now.AddDate(0, 0, -1).Format("20060102")
+
+	syscall.Flock(int(l.file.Fd()), syscall.LOCK_EX)
+	if _, err := os.Stat(oldFile); err != nil {
+		os.Rename(l.fileName, oldFile)
+	}
+	syscall.Flock(int(l.file.Fd()), syscall.LOCK_UN)
+
 	l.file.Close()
-
-	oldFile := l.fileName + "." + time.Now().AddDate(0, 0, -1).Format("20060102")
-
-	os.Rename(l.fileName, oldFile)
 
 	l.SetOutputFile(l.fileName)
 }
