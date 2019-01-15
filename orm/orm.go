@@ -467,6 +467,11 @@ func (s *Stmt) SQLUpdate(rt reflect.Type, rv reflect.Value) (sql string, refs []
 			name = str.FieldEscape(rt.Field(i).Name)
 		}
 
+		if cst := rt.Field(i).Tag.Get("db_const"); cst != "" {
+			fmt.Fprintf(bs, "`%s`=%s, ", name, cst)
+			continue
+		}
+
 		fmt.Fprintf(bs, "`%s`=?, ", name)
 
 		refs = append(refs, rv.Field(i).Interface())

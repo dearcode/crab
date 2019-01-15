@@ -8,6 +8,8 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
+
+	"github.com/dearcode/crab/log"
 )
 
 func TestORMStructDistinct(t *testing.T) {
@@ -204,8 +206,9 @@ func TestORMQueryOne(t *testing.T) {
 
 func TestORMUpdate(t *testing.T) {
 	data := struct {
-		User     string
-		Password string
+		User       string
+		Password   string
+		UpdateTime string `db:"utime" db_const:"now()"`
 	}{
 		User:     fmt.Sprintf("new_user_%d", time.Now().Unix()),
 		Password: fmt.Sprintf("new_password_%d", time.Now().Unix()),
@@ -219,7 +222,7 @@ func TestORMUpdate(t *testing.T) {
 
 	mock.ExpectExec("update `userinfo` set `user`=(.+), `password`=(.+) where id=(.+)").WithArgs(data.User, data.Password).WillReturnResult(sqlmock.NewResult(0, 1))
 
-	id, err := NewStmt(db, "userinfo").Where("id=2").Update(&data)
+	id, err := NewStmt(db, "userinfo").SetLogger(log.GetLogger()).Where("id=2").Update(&data)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
