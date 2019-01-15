@@ -263,6 +263,11 @@ func TestORMSubStruct(t *testing.T) {
 			Name string
 		} `db_table:"one"`
 
+		App struct {
+			ID   int64
+			Name string
+		} `db_table:"one" db_relation_field:"application_id"`
+
 		Filter []struct {
 			ID   int64
 			Key1 string
@@ -270,14 +275,14 @@ func TestORMSubStruct(t *testing.T) {
 		} `db_table:"more"`
 	}{}
 
-	sql := "select site.id, site.name, site.user_id, list.id, list.name from site,list where site.list_id = list.id"
+	sql := "select site.id, site.name, site.user_id, list.id, list.name, app.id, app.name from site,list,app where site.list_id = list.id and site.application_id = app.id"
 
 	str, err := NewStmt(nil, "site").SQLQueryBuilder(&site)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 	if str != sql {
-		t.Fatalf("expect:%s, recv:%s", sql, str)
+		t.Fatalf("\n\texpect:%s\n\t  recv:%s", sql, str)
 	}
 
 	t.Logf("sql:%+v", str)
