@@ -18,10 +18,11 @@ import (
 
 //HTTPClient 带超时重试控制的http客户端.
 type HTTPClient struct {
-	retryTimes int
-	timeout    time.Duration
-	client     http.Client
-	logger     *log.Logger
+	retryTimes        int
+	ignoreStatusCheck bool //忽略http status code(返回非200的不按错误处理)继续解析返回内容
+	timeout           time.Duration
+	client            http.Client
+	logger            *log.Logger
 }
 
 type StatusError struct {
@@ -83,6 +84,12 @@ func (c *HTTPClient) Timeout(t int) *HTTPClient {
 	return c
 }
 
+//IgnoreStatusCheck 忽略http返回状态(200)检测.
+func (c *HTTPClient) IgnoreStatusCheck() *HTTPClient {
+	c.ignoreStatusCheck = true
+	return c
+}
+
 //SetLogger 开启日志.
 func (c *HTTPClient) SetLogger(l *log.Logger) *HTTPClient {
 	c.logger = l
@@ -128,8 +135,12 @@ func (c HTTPClient) do(method, url string, headers map[string]string, body []byt
 		}
 	}
 
+	if c.ignoreStatusCheck {
+		return data, nil
+	}
+
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.Trace(&StatusError{Code: resp.StatusCode, Message: string(data)})
+		return data, errors.Trace(&StatusError{Code: resp.StatusCode, Message: string(data)})
 	}
 
 	return data, nil

@@ -23,6 +23,7 @@ type Stmt struct {
 	group  string
 	offset int
 	limit  int
+	raw    string
 	db     *sql.DB
 	logger *log.Logger
 }
@@ -86,8 +87,8 @@ func (s *Stmt) Limit(limit int) *Stmt {
 	return s
 }
 
-//SQLQueryBuilder build sql query.
-func (s *Stmt) SQLQueryBuilder(result interface{}) (string, error) {
+//sqlQueryBuilder build sql query.
+func (s *Stmt) sqlQueryBuilder(result interface{}) (string, error) {
 	rt := reflect.TypeOf(result)
 	if rt.Kind() != reflect.Ptr {
 		return "", fmt.Errorf("result type must be ptr, recv:%v", rt.Kind())
@@ -107,7 +108,7 @@ func (s *Stmt) SQLQueryBuilder(result interface{}) (string, error) {
 		return "", fmt.Errorf("result not found field")
 	}
 
-	return s.SQLQuery(rt), nil
+	return s.sqlQuery(rt), nil
 }
 
 func (s *Stmt) addWhere(w string) {
@@ -117,8 +118,8 @@ func (s *Stmt) addWhere(w string) {
 	s.where += w
 }
 
-//SQLCondition where, order, limit
-func (s *Stmt) SQLCondition(bs *bytes.Buffer) *bytes.Buffer {
+//sqlOption where, order, limit
+func (s *Stmt) sqlOption(bs *bytes.Buffer) *bytes.Buffer {
 	if s.where != "" {
 		fmt.Fprintf(bs, " where %s", s.where)
 	}
@@ -144,20 +145,20 @@ func (s *Stmt) SQLCondition(bs *bytes.Buffer) *bytes.Buffer {
 	return bs
 }
 
-// SQLCount 根据条件及结构生成查询sql
-func (s *Stmt) SQLCount() string {
+// sqlCount 根据条件及结构生成查询sql
+func (s *Stmt) sqlCount() string {
 	bs := bytes.NewBufferString("select count(*) from ")
 	bs.WriteString(s.table)
 
-	s.SQLCondition(bs)
+	s.sqlOption(bs)
 
 	sql := bs.String()
 	s.logger.Debugf("sql:%v", sql)
 	return sql
 }
 
-//SQLColumn 生成查询需要的列，目前只是内部用.
-func (s *Stmt) SQLColumn(rt reflect.Type, table string) string {
+//sqlColumn 生成查询需要的列，目前只是内部用.
+func (s *Stmt) sqlColumn(rt reflect.Type, table string) string {
 	bs := bytes.NewBufferString("")
 
 	for i := 0; i < rt.NumField(); i++ {
@@ -171,7 +172,7 @@ func (s *Stmt) SQLColumn(rt reflect.Type, table string) string {
 				s.table += ","
 				field := str.FieldEscape(f.Name)
 				s.table += field
-				bs.WriteString(s.SQLColumn(f.Type, str.FieldEscape(f.Name)))
+				bs.WriteString(s.sqlColumn(f.Type, str.FieldEscape(f.Name)))
 
 				if rf := f.Tag.Get("db_relation_field"); rf != "" {
 					s.addWhere(fmt.Sprintf("%s.%s = %s.id", table, rf, field))
@@ -211,19 +212,24 @@ func (s *Stmt) SQLColumn(rt reflect.Type, table string) string {
 	return bs.String()
 }
 
-// SQLQuery 根据条件及结构生成查询sql
-func (s *Stmt) SQLQuery(rt reflect.Type) string {
-	firstTable := strings.Split(s.table, ",")[0]
+// sqlQuery 根据条件及结构生成查询sql
+func (s *Stmt) sqlQuery(rt reflect.Type) string {
+	if s.raw != "" {
+		return s.raw
+	}
+
 	bs := bytes.NewBufferString("select ")
-	bs.WriteString(s.SQLColumn(rt, firstTable))
-
+	firstTable := strings.Split(s.table, ",")[0]
+	bs.WriteString(s.sqlColumn(rt, firstTable))
 	bs.Truncate(bs.Len() - 2)
-	fmt.Fprintf(bs, " from %s", s.table)
+	bs.WriteString(" from ")
+	bs.WriteString(s.table)
 
-	s.SQLCondition(bs)
-
+	s.sqlOption(bs)
 	sql := bs.String()
+
 	s.logger.Debugf("sql:%v", sql)
+
 	return sql
 }
 
@@ -276,7 +282,7 @@ func (s *Stmt) Query(result interface{}) error {
 		return fmt.Errorf("result not found field")
 	}
 
-	sql := s.SQLQuery(rt)
+	sql := s.sqlQuery(rt)
 
 	rows, err := s.db.Query(sql)
 	if err != nil {
@@ -381,7 +387,7 @@ func (s *Stmt) Query(result interface{}) error {
 
 //Count 查询总数.
 func (s *Stmt) Count() (int64, error) {
-	rows, err := s.db.Query(s.SQLCount())
+	rows, err := s.db.Query(s.sqlCount())
 	if err != nil {
 		return 0, errors.Trace(err)
 	}
@@ -397,8 +403,8 @@ func (s *Stmt) Count() (int64, error) {
 	return n, nil
 }
 
-//SQLInsert 添加数据
-func (s *Stmt) SQLInsert(rt reflect.Type, rv reflect.Value) (sql string, refs []interface{}) {
+//sqlInsert 添加数据
+func (s *Stmt) sqlInsert(rt reflect.Type, rv reflect.Value) (sql string, refs []interface{}) {
 	bs := bytes.NewBufferString("insert into ")
 	bs.WriteString(s.table)
 	bs.WriteString(" (")
@@ -445,8 +451,8 @@ func (s *Stmt) SQLInsert(rt reflect.Type, rv reflect.Value) (sql string, refs []
 	return
 }
 
-// SQLUpdate 根据条件及结构生成update sql
-func (s *Stmt) SQLUpdate(rt reflect.Type, rv reflect.Value) (sql string, refs []interface{}) {
+// sqlUpdate 根据条件及结构生成update sql
+func (s *Stmt) sqlUpdate(rt reflect.Type, rv reflect.Value) (sql string, refs []interface{}) {
 	bs := bytes.NewBufferString(fmt.Sprintf("update `%s` set ", s.table))
 
 	for i := 0; i < rt.NumField(); i++ {
@@ -479,7 +485,7 @@ func (s *Stmt) SQLUpdate(rt reflect.Type, rv reflect.Value) (sql string, refs []
 
 	bs.Truncate(bs.Len() - 2)
 
-	return s.SQLCondition(bs).String(), refs
+	return s.sqlOption(bs).String(), refs
 }
 
 //Update sql update db.
@@ -499,7 +505,7 @@ func (s *Stmt) Update(data interface{}) (int64, error) {
 		return 0, errors.Trace(meta.ErrFieldNotFound)
 	}
 
-	sql, refs := s.SQLUpdate(rt, rv)
+	sql, refs := s.sqlUpdate(rt, rv)
 	s.logger.Debugf("sql:%v, vals:%#v", sql, refs)
 	r, err := s.db.Exec(sql, refs...)
 	if err != nil {
@@ -525,7 +531,7 @@ func (s *Stmt) Insert(data interface{}) (int64, error) {
 		return 0, errors.Trace(meta.ErrFieldNotFound)
 	}
 
-	sql, refs := s.SQLInsert(rt, rv)
+	sql, refs := s.sqlInsert(rt, rv)
 	r, err := s.db.Exec(sql, refs...)
 	if err != nil {
 		return 0, errors.Trace(err)
@@ -541,4 +547,10 @@ func (s *Stmt) Exec(query string, args ...interface{}) (int64, error) {
 		return -1, errors.Trace(err)
 	}
 	return rs.RowsAffected()
+}
+
+//Raw 原始sql.
+func (s *Stmt) Raw(query string, args ...interface{}) *Stmt {
+	s.raw = fmt.Sprintf(query, args...)
+	return s
 }
