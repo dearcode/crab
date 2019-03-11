@@ -34,13 +34,13 @@ func Encrypt(encodeStr string, key string) (string, error) {
 	crypted := make([]byte, len(encodeBytes))
 	blockMode.CryptBlocks(crypted, encodeBytes)
 
-	return base64.URLEncoding.EncodeToString(crypted), nil
+	return base64.RawURLEncoding.EncodeToString(crypted), nil
 }
 
 // Decrypt aes 解密.
 func Decrypt(decodeStr string, key string) (string, error) {
 	decodeKey := byteKey(key)
-	decodeBytes, err := base64.URLEncoding.DecodeString(decodeStr)
+	decodeBytes, err := base64.RawURLEncoding.DecodeString(decodeStr)
 	if err != nil {
 		return "", errors.Trace(err)
 	}
