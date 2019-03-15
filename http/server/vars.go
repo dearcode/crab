@@ -176,35 +176,35 @@ func ParseURLVars(req *http.Request, result interface{}) error {
 			key = f.Name
 		}
 
-		val := req.URL.Query().Get(key)
-		if val == "" {
-			val = req.Header.Get(key)
+		vals, exist := req.URL.Query()[key]
+		if !exist || len(vals) == 0 {
+			continue
 		}
 
 		switch f.Type.Kind() {
 		case reflect.Bool:
-			vb, err := strconv.ParseBool(val)
+			vb, err := strconv.ParseBool(vals[0])
 			if err != nil {
-				return fmt.Errorf("key:%v value:%v format error", key, val)
+				return fmt.Errorf("key:%v value:%v format error", key, vals[0])
 			}
 			rv.Field(i).SetBool(vb)
 
 		case reflect.Int, reflect.Int64:
-			vi, err := strconv.ParseInt(val, 10, 64)
+			vi, err := strconv.ParseInt(vals[0], 10, 64)
 			if err != nil {
-				return fmt.Errorf("key:%v value:%v format error", key, val)
+				return fmt.Errorf("key:%v value:%v format error", key, vals[0])
 			}
 			rv.Field(i).SetInt(vi)
 
 		case reflect.Uint, reflect.Uint64:
-			vi, err := strconv.ParseUint(val, 10, 64)
+			vi, err := strconv.ParseUint(vals[0], 10, 64)
 			if err != nil {
-				return fmt.Errorf("key:%v value:%v format error", key, val)
+				return fmt.Errorf("key:%v value:%v format error", key, vals[0])
 			}
 			rv.Field(i).SetUint(vi)
 
 		case reflect.String:
-			rv.Field(i).SetString(val)
+			rv.Field(i).SetString(vals[0])
 		}
 	}
 
