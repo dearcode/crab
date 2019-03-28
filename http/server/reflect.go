@@ -122,5 +122,5 @@ func reflectKeyValue(getVal getValueFunc, rt reflect.Type, rv reflect.Value, lev
 func reflectStruct(getVal getValueFunc, obj interface{}) error {
 	rt := reflect.TypeOf(obj)
 	rv := reflect.ValueOf(obj)
-	return reflectKeyValue(getVal, rt, rv, 1)
+	return reflectKeyValue(getVal, rt, rv, 2)
 }

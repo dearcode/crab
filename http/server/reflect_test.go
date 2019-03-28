@@ -12,9 +12,15 @@ type TestSub struct {
 	SubStr string
 }
 
+type TestSubSecond struct {
+	Secondint int
+	SecondStr string
+}
+
 type TestPtrSub struct {
 	PSubint *int
 	PSubStr *string
+	Second  *TestSubSecond
 }
 
 type TestStruct struct {
@@ -26,7 +32,12 @@ type TestStruct struct {
 
 func TestReflectStruct(t *testing.T) {
 	ts := TestStruct{
-		TestPtrSub: &TestPtrSub{},
+		TestPtrSub: &TestPtrSub{
+			Second: &TestSubSecond{
+				SecondStr: "second str",
+				Secondint: 333,
+			},
+		},
 		TestSub: TestSub{
 			SubStr: "sub string values",
 			Subint: 111,
@@ -59,6 +70,10 @@ func TestReflectStruct(t *testing.T) {
 				return ts.Key, true
 			case "PVal":
 				return *ts.PVal, true
+			case "Secondint":
+				return fmt.Sprintf("%v", ts.Second.Secondint), true
+			case "SecondStr":
+				return ts.Second.SecondStr, true
 			default:
 				return "", false
 			}
