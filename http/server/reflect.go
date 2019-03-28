@@ -77,7 +77,7 @@ func setValueOrPtr(f reflect.StructField, val string, rv reflect.Value) error {
 
 type getValueFunc func(string) (string, bool)
 
-func reflectKeyValue(getVal getValueFunc, rt reflect.Type, rv reflect.Value) error {
+func reflectKeyValue(getVal getValueFunc, rt reflect.Type, rv reflect.Value , level int) error {
 	if rv.Type().Kind() == reflect.Ptr && rv.IsNil() {
 		pv := reflect.New(rt.Elem())
 		rv.Set(pv)
@@ -95,7 +95,11 @@ func reflectKeyValue(getVal getValueFunc, rt reflect.Type, rv reflect.Value) err
 		}
 
 		if (f.Type.Kind() == reflect.Struct) || (f.Type.Kind() == reflect.Ptr && f.Type.Elem().Kind() == reflect.Struct) {
-			if err := reflectKeyValue(getVal, f.Type, rv.Field(i)); err != nil {
+            level--
+            if level < 0 {
+                continue
+            }
+			if err := reflectKeyValue(getVal, f.Type, rv.Field(i), level); err != nil {
 				return errors.Trace(err)
 			}
 			continue
@@ -119,5 +123,5 @@ func reflectKeyValue(getVal getValueFunc, rt reflect.Type, rv reflect.Value) err
 func reflectStruct(getVal getValueFunc, obj interface{}) error {
 	rt := reflect.TypeOf(obj)
 	rv := reflect.ValueOf(obj)
-	return reflectKeyValue(getVal, rt, rv)
+	return reflectKeyValue(getVal, rt, rv, 1)
 }
