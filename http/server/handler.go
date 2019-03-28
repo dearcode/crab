@@ -324,7 +324,7 @@ func (s *httpServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		nr = nr.WithContext(ctx)
 	}
 
-	log.Debugf("%v %v %v h:%#v", r.RemoteAddr, r.Method, r.URL, h)
+	log.Debugf("%v %v %v h:%p", r.RemoteAddr, r.Method, r.URL, h)
 
 	h(w, nr)
 }

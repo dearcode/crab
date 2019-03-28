@@ -25,6 +25,7 @@ type HTTPClient struct {
 	logger            *log.Logger
 }
 
+//StatusError http错误.
 type StatusError struct {
 	Code    int
 	Message string

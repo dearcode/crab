@@ -11,9 +11,12 @@ import (
 )
 
 var (
-	Errunsupported = fmt.Errorf("expect ptr data")
+	//ErrUnsupported 不支持类型
+	ErrUnsupported = fmt.Errorf("expect ptr data")
+	//ErrInvalidType 参数必须为指针类型
 	ErrInvalidType = fmt.Errorf("result must be ptr")
-	ErrNotFound    = fmt.Errorf("key not found")
+	// ErrNotFound 没找到key
+	ErrNotFound = fmt.Errorf("key not found")
 )
 
 // Config 读ini配置文件.
@@ -117,7 +120,7 @@ func (c *Config) GetData(s, k string, result interface{}, d interface{}) error {
 		}
 		rv.SetFloat(data)
 	default:
-		return errors.Trace(Errunsupported)
+		return errors.Trace(ErrUnsupported)
 	}
 
 	return nil
@@ -209,7 +212,7 @@ func (c Config) getDefault(k reflect.Kind, v string) (interface{}, error) {
 		return strconv.ParseFloat(v, 32)
 
 	default:
-		return nil, Errunsupported
+		return nil, ErrUnsupported
 	}
 }
 

@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/juju/errors"
 
@@ -83,19 +85,48 @@ func UnmarshalForm(req *http.Request, postion VariablePostion, result interface{
 	return nil
 }
 
-// UnmarshalJSON 解析body中的json数据.
+//UnmarshalJSON 解析body中的json数据.
 func UnmarshalJSON(req *http.Request, result interface{}) error {
-	data, err := ioutil.ReadAll(req.Body)
+	body, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		return errors.Trace(err)
+	}
+	//空body不解析，不报错
+	if len(body) == 0 {
+		return nil
+	}
+
+	return json.Unmarshal(body, result)
+}
+
+// UnmarshalBody 解析body中的json, form数据.
+func UnmarshalBody(req *http.Request, result interface{}) error {
+	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		return errors.Trace(err)
 	}
 
 	//空body不解析，不报错
-	if len(data) == 0 {
+	if len(body) == 0 {
 		return nil
 	}
 
-	return json.Unmarshal(data, result)
+	if err := json.Unmarshal(body, result); err != nil {
+		//如果指定类型为json的，解析出错要抛出错误信息, 但大多人使用时不指定content-type
+		if ct := req.Header.Get("Content-Type"); strings.Contains(strings.ToLower(ct), "json") {
+			return errors.Trace(err)
+		}
+	}
+
+	values, _ := url.ParseQuery(string(body))
+
+	return reflectStruct(func(key string) (string, bool) {
+		vals, exist := values[key]
+		if !exist {
+			return "", false
+		}
+		return vals[0], true
+	}, result)
 }
 
 // UnmarshalValidate 解析并检证参数.
@@ -146,7 +177,7 @@ func ParseVars(req *http.Request, result interface{}) error {
 		return errors.Trace(err)
 	}
 
-	if err := UnmarshalJSON(req, result); err != nil {
+	if err := UnmarshalBody(req, result); err != nil {
 		return errors.Trace(err)
 	}
 
@@ -157,56 +188,12 @@ func ParseVars(req *http.Request, result interface{}) error {
 
 //ParseURLVars 解析url中参数.
 func ParseURLVars(req *http.Request, result interface{}) error {
-	rt := reflect.TypeOf(result)
-	rv := reflect.ValueOf(result)
-
-	//去指针
-	if rt.Kind() == reflect.Ptr && rt.Elem().Kind() == reflect.Struct {
-		rt = rt.Elem()
-		rv = rv.Elem()
-	}
-
-	for i := 0; i < rt.NumField(); i++ {
-		f := rt.Field(i)
-		if f.PkgPath != "" && !f.Anonymous { // unexported
-			continue
+	values := req.URL.Query()
+	return reflectStruct(func(key string) (string, bool) {
+		vals, exist := values[key]
+		if !exist {
+			return "", false
 		}
-		key := f.Tag.Get("json")
-		if key == "" {
-			key = f.Name
-		}
-
-		vals, exist := req.URL.Query()[key]
-		if !exist || len(vals) == 0 {
-			continue
-		}
-
-		switch f.Type.Kind() {
-		case reflect.Bool:
-			vb, err := strconv.ParseBool(vals[0])
-			if err != nil {
-				return fmt.Errorf("key:%v value:%v format error", key, vals[0])
-			}
-			rv.Field(i).SetBool(vb)
-
-		case reflect.Int, reflect.Int64:
-			vi, err := strconv.ParseInt(vals[0], 10, 64)
-			if err != nil {
-				return fmt.Errorf("key:%v value:%v format error", key, vals[0])
-			}
-			rv.Field(i).SetInt(vi)
-
-		case reflect.Uint, reflect.Uint64:
-			vi, err := strconv.ParseUint(vals[0], 10, 64)
-			if err != nil {
-				return fmt.Errorf("key:%v value:%v format error", key, vals[0])
-			}
-			rv.Field(i).SetUint(vi)
-
-		case reflect.String:
-			rv.Field(i).SetString(vals[0])
-		}
-	}
-
-	return nil
+		return vals[0], true
+	}, result)
 }

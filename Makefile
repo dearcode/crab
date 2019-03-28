@@ -1,19 +1,18 @@
 all: crab
 
-FILES := $$(find . -name '*.go' | grep -vE 'vendor') 
-SOURCE_PATH := orm validation cache log util 
+SOURCE_PATH := orm validation cache log util http
 
 golint:
-	go get github.com/golang/lint/golint  
+	go get golang.org/x/lint/golint
 
-megacheck:
-	go get honnef.co/go/tools/cmd/megacheck
+staticcheck:
+	go get honnef.co/go/tools/cmd/staticcheck
 
-lint: golint megacheck
+lint: golint staticcheck
 	@for path in $(SOURCE_PATH); do echo "golint $$path"; golint $$path"/..."; done;
 	@for path in $(SOURCE_PATH); do echo "gofmt -s -l -w $$path";  gofmt -s -l -w $$path;  done;
-	go tool vet $(FILES) 2>&1
-	megacheck ./...
+	go vet ./...
+	staticcheck ./...
 
 clean:
 	@rm -rf bin
