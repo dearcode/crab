@@ -412,26 +412,16 @@ func (s *Stmt) sqlInsert(rt reflect.Type, rv reflect.Value) (sql string, refs []
 	dbs := bytes.NewBufferString(") values (")
 
 	for i := 0; i < rt.NumField(); i++ {
-		if rt.Field(i).PkgPath != "" && !rt.Field(i).Anonymous { // unexported
+		key, val, ok := s.sqlStructField(rt.Field(i), false)
+		if !ok {
 			continue
-		}
-		if rt.Field(i).Type.Kind() == reflect.Struct {
-			continue
-		}
-		def := rt.Field(i).Tag.Get("db_default")
-		if def == "auto" {
-			continue
-		}
-		name := rt.Field(i).Tag.Get("db")
-		if name == "" {
-			name = str.FieldEscape(rt.Field(i).Name)
 		}
 
-		bs.WriteString(name)
+		bs.WriteString(key)
 		bs.WriteString(", ")
 
-		if def != "" {
-			dbs.WriteString(def)
+		if val != "" {
+			dbs.WriteString(val)
 			dbs.WriteString(", ")
 			continue
 		}
@@ -451,34 +441,59 @@ func (s *Stmt) sqlInsert(rt reflect.Type, rv reflect.Value) (sql string, refs []
 	return
 }
 
+//sqlStructField 解析结构体中的字段，根据default及db值内容生成对应key ,value.
+func (s *Stmt) sqlStructField(f reflect.StructField, isUpdate bool) (key string, val string, ok bool) {
+	if f.PkgPath != "" && !f.Anonymous { // unexported
+		return
+	}
+
+	switch f.Type.Kind() {
+	case reflect.Struct, reflect.Slice, reflect.Ptr:
+		return
+	}
+
+	if _, ok = f.Tag.Lookup("db_auto"); ok {
+		return
+	}
+
+	if _, ok = f.Tag.Lookup("db_ignore"); ok {
+		return
+	}
+
+	if key, ok = f.Tag.Lookup("db"); !ok {
+		key = str.FieldEscape(f.Name)
+	}
+
+	//insert 解析default
+	if !isUpdate {
+		if val, ok = f.Tag.Lookup("db_default"); ok {
+			return
+		}
+	}
+
+	if val, ok = f.Tag.Lookup("db_const"); ok {
+		return
+	}
+
+	return key, "", true
+}
+
 // sqlUpdate 根据条件及结构生成update sql
 func (s *Stmt) sqlUpdate(rt reflect.Type, rv reflect.Value) (sql string, refs []interface{}) {
 	bs := bytes.NewBufferString(fmt.Sprintf("update `%s` set ", s.table))
 
 	for i := 0; i < rt.NumField(); i++ {
-		if rt.Field(i).PkgPath != "" && !rt.Field(i).Anonymous { // unexported
-			continue
-		}
-		switch rt.Field(i).Type.Kind() {
-		case reflect.Struct, reflect.Slice:
+		key, val, ok := s.sqlStructField(rt.Field(i), true)
+		if !ok {
 			continue
 		}
 
-		if def := rt.Field(i).Tag.Get("db_default"); def != "" {
+		if val != "" {
+			fmt.Fprintf(bs, "`%s`=%s, ", key, val)
 			continue
 		}
 
-		name := rt.Field(i).Tag.Get("db")
-		if name == "" {
-			name = str.FieldEscape(rt.Field(i).Name)
-		}
-
-		if cst := rt.Field(i).Tag.Get("db_const"); cst != "" {
-			fmt.Fprintf(bs, "`%s`=%s, ", name, cst)
-			continue
-		}
-
-		fmt.Fprintf(bs, "`%s`=?, ", name)
+		fmt.Fprintf(bs, "`%s`=?, ", key)
 
 		refs = append(refs, rv.Field(i).Interface())
 	}
@@ -538,6 +553,58 @@ func (s *Stmt) Insert(data interface{}) (int64, error) {
 	}
 
 	return r.LastInsertId()
+}
+
+// BatchInsert 数组插入
+func (s *Stmt) BatchInsert(data []interface{}) ([]int64, error) {
+	fmt.Printf("data:%#v\n", data)
+	if len(data) == 0 {
+		return nil, errors.Trace(meta.ErrArgIsNil)
+	}
+
+	txn, err := s.db.Begin()
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	defer func() {
+		if err != nil {
+			txn.Rollback()
+			return
+		}
+		txn.Commit()
+	}()
+
+	var ir sql.Result
+	var ids []int64
+
+	fmt.Printf("data:%#v\n", data)
+	for _, d := range data {
+		rt := reflect.TypeOf(d)
+		rv := reflect.ValueOf(d)
+
+		if rt.Kind() == reflect.Ptr {
+			rt = rt.Elem()
+			rv = rv.Elem()
+		}
+
+		if rt.Kind() != reflect.Struct || rt.NumField() == 0 {
+			s.logger.Errorf("kind:%v, type:%v", rt.Kind(), rt)
+			return nil, errors.Trace(meta.ErrFieldNotFound)
+		}
+
+		stmt, refs := s.sqlInsert(rt, rv)
+
+		if ir, err = txn.Exec(stmt, refs...); err != nil {
+			return nil, errors.Trace(err)
+		}
+
+		id, _ := ir.LastInsertId()
+
+		ids = append(ids, id)
+	}
+
+	return ids, nil
 }
 
 //Exec 保留的原始执行接口.

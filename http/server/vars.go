@@ -2,12 +2,9 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"reflect"
-	"strconv"
 	"strings"
 
 	"github.com/juju/errors"
@@ -18,71 +15,20 @@ import (
 )
 
 // UnmarshalForm 解析form中或者url中参数, 只支持int和string.
-func UnmarshalForm(req *http.Request, postion VariablePostion, result interface{}) error {
-	if postion == FORM {
-		if err := req.ParseForm(); err != nil {
-			return errors.Trace(err)
-		}
-	}
+func UnmarshalForm(req *http.Request, result interface{}) error {
+	req.ParseForm()
+	fvs := req.Form
+	hvs := req.Header
 
-	rt := reflect.TypeOf(result)
-	rv := reflect.ValueOf(result)
-
-	//去指针
-	if rt.Kind() == reflect.Ptr && rt.Elem().Kind() == reflect.Struct {
-		rt = rt.Elem()
-		rv = rv.Elem()
-	}
-
-	for i := 0; i < rt.NumField(); i++ {
-		f := rt.Field(i)
-		if f.PkgPath != "" && !f.Anonymous { // unexported
-			continue
-		}
-		key := f.Tag.Get("json")
-		if key == "" {
-			key = f.Name
-		}
-		var val string
-
-		switch postion {
-		case FORM, URI:
-			val = req.FormValue(key)
-		case HEADER:
-			val = req.Header.Get(key)
-		}
-
-		switch f.Type.Kind() {
-		case reflect.Bool:
-			if val != "" {
-				rv.Field(i).SetBool(true)
+	return reflectStruct(func(key string) (string, bool) {
+		vals, exist := fvs[key]
+		if !exist {
+			if vals, exist = hvs[key]; !exist {
+				return "", false
 			}
-		case reflect.Int, reflect.Int64:
-			vi, err := strconv.ParseInt(val, 10, 64)
-			if err != nil {
-				//不需要验证的key就不返回错误了
-				if f.Tag.Get("valid") == "" {
-					break
-				}
-				return fmt.Errorf("key:%v value:%v format error", key, val)
-			}
-			rv.Field(i).SetInt(vi)
-		case reflect.Uint, reflect.Uint64:
-			vi, err := strconv.ParseUint(val, 10, 64)
-			if err != nil {
-				//不需要验证的key就不返回错误了
-				if f.Tag.Get("valid") == "" {
-					break
-				}
-				return fmt.Errorf("key:%v value:%v format error", key, val)
-			}
-			rv.Field(i).SetUint(vi)
-
-		case reflect.String:
-			rv.Field(i).SetString(val)
 		}
-	}
-	return nil
+		return strings.Join(vals, "\x00"), true
+	}, result)
 }
 
 //UnmarshalJSON 解析body中的json数据.
@@ -139,7 +85,7 @@ func UnmarshalValidate(req *http.Request, postion VariablePostion, result interf
 	if postion == JSON {
 		err = UnmarshalJSON(req, result)
 	} else {
-		err = UnmarshalForm(req, postion, result)
+		err = UnmarshalForm(req, result)
 	}
 
 	if err != nil {

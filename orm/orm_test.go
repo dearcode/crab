@@ -206,6 +206,7 @@ func TestORMQueryOne(t *testing.T) {
 
 func TestORMUpdate(t *testing.T) {
 	data := struct {
+		ClusterIDs []int64 `db_ignore:""`
 		User       string
 		Password   string
 		UpdateTime string `db:"utime" db_const:"now()"`
@@ -232,9 +233,10 @@ func TestORMUpdate(t *testing.T) {
 
 func TestORMInsert(t *testing.T) {
 	data := struct {
-		ID       int64 `db_defult:"auto"`
-		User     string
-		Password string
+		ID         int64   `db_defult:"auto"`
+		ClusterIDs []int64 `db_ignore:""`
+		User       string
+		Password   string
 	}{
 		User:     fmt.Sprintf("user_%d", time.Now().Unix()),
 		Password: fmt.Sprintf("password_%d", time.Now().Unix()),

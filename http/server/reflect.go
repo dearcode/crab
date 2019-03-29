@@ -51,6 +51,15 @@ func setValue(val string, rv reflect.Value) error {
 			return errors.Trace(err)
 		}
 		rv.SetBool(b)
+	case reflect.Slice:
+		vals := strings.Split(val, "\x00")
+		rvs := reflect.MakeSlice(rv.Type(), 0, len(vals))
+		for i := 0; i < len(vals); i++ {
+			v := reflect.New(rv.Type().Elem())
+			setValue(vals[i], v.Elem())
+			rvs = reflect.Append(rvs, v.Elem())
+		}
+		rv.Set(rvs)
 	}
 
 	return nil

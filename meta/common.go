@@ -10,7 +10,7 @@ var (
 	//ErrArgNotPtr argument is not ptr.
 	ErrArgNotPtr = errors.New("argument not ptr")
 	//ErrFieldNotFound struct's field not found.
-	ErrFieldNotFound = errors.New("struc's field not found")
+	ErrFieldNotFound = errors.New("struct's field not found")
 	//ErrArgIsNil argument is nil.
 	ErrArgIsNil = errors.New("argument is nil")
 )

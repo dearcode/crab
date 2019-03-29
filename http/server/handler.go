@@ -17,8 +17,11 @@ import (
 	"github.com/dearcode/crab/log"
 )
 
+//UserKey 用户自定义的key
+type UserKey string
+
 type handlerRegexp struct {
-	keys []string
+	keys []UserKey
 	exp  *regexp.Regexp
 	handler
 }
@@ -149,7 +152,7 @@ func newHandlerRegexp(h handler) handlerRegexp {
 	hr := handlerRegexp{handler: h}
 
 	for _, m := range keysExp.FindAllStringSubmatch(hr.path, -1) {
-		hr.keys = append(hr.keys, m[1])
+		hr.keys = append(hr.keys, UserKey(m[1]))
 	}
 
 	np := keysExp.ReplaceAllString(hr.path, "(.+)")

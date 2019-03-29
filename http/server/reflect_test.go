@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/hokaccha/go-prettyjson"
@@ -9,7 +10,7 @@ import (
 
 type TestSub struct {
 	Subint int
-	SubStr string
+	SubStr []string
 }
 
 type TestSubSecond struct {
@@ -39,7 +40,7 @@ func TestReflectStruct(t *testing.T) {
 			},
 		},
 		TestSub: TestSub{
-			SubStr: "sub string values",
+			SubStr: []string{"s1", "s2"},
 			Subint: 111,
 		},
 		Key: "main string key",
@@ -65,7 +66,7 @@ func TestReflectStruct(t *testing.T) {
 			case "Subint":
 				return fmt.Sprintf("%v", ts.Subint), true
 			case "SubStr":
-				return ts.SubStr, true
+				return strings.Join(ts.SubStr, "\x00"), true
 			case "Key":
 				return ts.Key, true
 			case "PVal":
