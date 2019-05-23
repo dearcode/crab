@@ -14,7 +14,21 @@ type regexpTest struct {
 }
 
 func (rt *regexpTest) GET(w http.ResponseWriter, req *http.Request) {
-	fmt.Fprintf(w, "%#v", req.Context())
+	user, ok := server.RESTValue(req, "user")
+	if !ok {
+		panic("context `user` not found")
+	}
+	id, ok := server.RESTValue(req, "id")
+	if !ok {
+		panic("context `user` not found")
+	}
+
+	_, ok = server.RESTValue(req, "idx")
+	if ok {
+		panic("find invalid key idx")
+	}
+
+	fmt.Fprintf(w, "user:%v, id:%v", user, id)
 }
 
 type index struct {
@@ -24,6 +38,16 @@ type index struct {
 func (i *index) GET(w http.ResponseWriter, req *http.Request) {
 	i.r = req
 	w.Write([]byte(fmt.Sprintf("client:%v addr:%p", i.r.RemoteAddr, i)))
+}
+
+func testRESTClient() {
+	url := fmt.Sprintf("http://127.0.0.1:9000/regexp/mailchina/test/")
+	//url := fmt.Sprintf("http://127.0.0.1:9000/regexp/mailchina/test/u1%v", time.Now().UnixNano())
+	buf, err := client.New().Get(url, nil, nil)
+	if err != nil {
+		panic(err.Error())
+	}
+	fmt.Printf("response:%s\n", buf)
 }
 
 func testHTTPClient() {
@@ -44,7 +68,7 @@ func main() {
 	flag.Parse()
 
 	server.Register(&index{})
-	server.RegisterPrefix(&regexpTest{}, "/regexp/{user}/test/")
+	server.RegisterPrefix(&regexpTest{}, "/regexp/{user}/test/{id}")
 
 	server.RegisterHandler(testHandler, "GET", "/testHandler/")
 
@@ -58,6 +82,7 @@ func main() {
 	for i := 0; i < 5; i++ {
 		time.Sleep(time.Second)
 		testHTTPClient()
+		testRESTClient()
 	}
 
 }

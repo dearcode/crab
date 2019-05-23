@@ -17,11 +17,11 @@ import (
 	"github.com/dearcode/crab/log"
 )
 
-//UserKey 用户自定义的key
-type UserKey string
+//userKey 用户自定义的key
+type userKey string
 
 type handlerRegexp struct {
-	keys []UserKey
+	keys []userKey
 	exp  *regexp.Regexp
 	handler
 }
@@ -152,7 +152,7 @@ func newHandlerRegexp(h handler) handlerRegexp {
 	hr := handlerRegexp{handler: h}
 
 	for _, m := range keysExp.FindAllStringSubmatch(hr.path, -1) {
-		hr.keys = append(hr.keys, UserKey(m[1]))
+		hr.keys = append(hr.keys, userKey(m[1]))
 	}
 
 	np := keysExp.ReplaceAllString(hr.path, "(.+)")
@@ -254,11 +254,26 @@ func AddFilter(filter Filter) {
 
 func parseRequestValues(path string, ur handlerRegexp) context.Context {
 	ctx := context.Background()
-	for i, v := range ur.exp.FindAllStringSubmatch(path, -1) {
-		//log.Debugf("i:%v, v:%#v, keys:%#v", i, v, ur.keys)
-		ctx = context.WithValue(ctx, ur.keys[i], v[1])
+	m := ur.exp.FindAllStringSubmatch(path, -1)
+	if len(m) == 0 {
+		return ctx
 	}
+	for i := 1; i < len(m[0]); i++ {
+		log.Debugf("i:%v, key:%v, val:%v", i, ur.keys[i-1], m[0][i])
+		ctx = context.WithValue(ctx, ur.keys[i-1], m[0][i])
+	}
+
 	return ctx
+}
+
+//RESTValue 取restful方式传递的值
+func RESTValue(req *http.Request, key string) (string, bool) {
+	i := req.Context().Value(userKey(key))
+	if i == nil {
+		return "", false
+	}
+	s, ok := i.(string)
+	return s, ok
 }
 
 func getHandler(method, path string) (func(http.ResponseWriter, *http.Request), context.Context) {
