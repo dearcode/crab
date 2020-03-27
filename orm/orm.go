@@ -452,11 +452,11 @@ func (s *Stmt) sqlStructField(f reflect.StructField, isUpdate bool) (key string,
 		return
 	}
 
-	if _, ok = f.Tag.Lookup("db_auto"); ok {
+	if _, ignore := f.Tag.Lookup("db_auto"); ignore {
 		return
 	}
 
-	if _, ok = f.Tag.Lookup("db_ignore"); ok {
+	if _, ignore := f.Tag.Lookup("db_ignore"); ignore {
 		return
 	}
 
