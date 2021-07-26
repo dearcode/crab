@@ -1,7 +1,7 @@
 ## Crab 开发必备库  
 ![Logo](https://raw.githubusercontent.com/dearcode/crab/master/doc/logo.png)   
 
-
+[![codecov](https://codecov.io/gh/dearcode/crab/branch/master/graph/badge.svg?token=WKPPEUIHJY)](https://codecov.io/gh/dearcode/crab)
 # config  
 加载ini格式的配置文件, 支持以;或者#开头的注释
 ```go
