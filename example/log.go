@@ -3,7 +3,7 @@ package main
 import (
 	"time"
 
-	"github.com/dearcode/crab/log"
+	"dearcode.net/crab/log"
 )
 
 func main() {

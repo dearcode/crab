@@ -9,7 +9,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 
-	"github.com/dearcode/crab/log"
+	"dearcode.net/crab/log"
 )
 
 func TestORMStructDistinct(t *testing.T) {

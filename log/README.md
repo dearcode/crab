@@ -10,7 +10,7 @@ package main
 import (
     "time"
 
-    "github.com/dearcode/crab/log"
+    "dearcode.net/crab/log"
 )
 
 func main() {
@@ -40,19 +40,19 @@ func main() {
 
 ### Using *go get*
 ```bash
-    $ go get github.com/dearcode/crab/log  
+    $ go get dearcode.net/crab/log  
 ```
 After this command *log* is ready to use. Its source will be in:  
 ```bash
-    $GOPATH/src/github.com/dearcode/crab/log  
+    $GOPATH/src/dearcode.net/crab/log  
 ```
 
 You can use `go get -u` to update the package.  
 
 ## Documentation  
 
-For docs, see http://godoc.org/github.com/dearcode/crab/log or run:  
+For docs, see http://godoc.org/dearcode.net/crab/log or run:  
 ```bash
-    $ godoc github.com/dearcode/crab/log  
+    $ godoc dearcode.net/crab/log  
 ```
 

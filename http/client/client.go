@@ -13,7 +13,7 @@ import (
 
 	"github.com/juju/errors"
 
-	"github.com/dearcode/crab/log"
+	"dearcode.net/crab/log"
 )
 
 //HTTPClient 带超时重试控制的http客户端.

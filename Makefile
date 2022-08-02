@@ -3,10 +3,10 @@ all: crab
 SOURCE_PATH := orm validation cache log util http
 
 golint:
-	go get golang.org/x/lint/golint
+	go install golang.org/x/lint/golint@latest
 
 staticcheck:
-	go get honnef.co/go/tools/cmd/staticcheck
+	go install honnef.co/go/tools/cmd/staticcheck@latest
 
 lint: golint staticcheck
 	@for path in $(SOURCE_PATH); do echo "golint $$path"; golint $$path"/..."; done;

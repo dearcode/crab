@@ -9,9 +9,9 @@ import (
 
 	"github.com/juju/errors"
 
-	"github.com/dearcode/crab/log"
-	"github.com/dearcode/crab/meta"
-	"github.com/dearcode/crab/util/str"
+	"dearcode.net/crab/log"
+	"dearcode.net/crab/meta"
+	"dearcode.net/crab/util/str"
 )
 
 //Stmt db stmt.

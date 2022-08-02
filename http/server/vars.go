@@ -9,9 +9,9 @@ import (
 
 	"github.com/juju/errors"
 
-	"github.com/dearcode/crab/log"
-	"github.com/dearcode/crab/meta"
-	"github.com/dearcode/crab/validation"
+	"dearcode.net/crab/log"
+	"dearcode.net/crab/meta"
+	"dearcode.net/crab/validation"
 )
 
 // UnmarshalForm 解析form中或者url中参数, 只支持int和string.

@@ -1,7 +1,7 @@
 package client
 
 import (
-	"github.com/dearcode/crab/log"
+	"dearcode.net/crab/log"
 	"testing"
 )
 

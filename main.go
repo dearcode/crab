@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dearcode/crab/http/client"
-	"github.com/dearcode/crab/http/server"
+	"dearcode.net/crab/http/client"
+	"dearcode.net/crab/http/server"
 )
 
 type regexpTest struct {
@@ -41,7 +41,7 @@ func (i *index) GET(w http.ResponseWriter, req *http.Request) {
 }
 
 func testRESTClient() {
-	url := fmt.Sprintf("http://127.0.0.1:9000/regexp/mailchina/test/")
+	url := "http://127.0.0.1:9000/regexp/mailchina/test/"
 	//url := fmt.Sprintf("http://127.0.0.1:9000/regexp/mailchina/test/u1%v", time.Now().UnixNano())
 	buf, err := client.New().Get(url, nil, nil)
 	if err != nil {
