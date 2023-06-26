@@ -26,7 +26,7 @@ func NewCache(timeout int64) *Cache {
 	return &Cache{timeout: timeout, vars: make(map[string]*cacheEntry), ll: list.New()}
 }
 
-//Get get from cache and remove expired key.
+// Get get from cache and remove expired key.
 func (c *Cache) Get(key string) interface{} {
 	c.evict()
 
@@ -39,7 +39,7 @@ func (c *Cache) Get(key string) interface{} {
 	return nil
 }
 
-//Add add to cache and remove expired key.
+// Add add to cache and remove expired key.
 func (c *Cache) Add(key string, val interface{}) {
 	c.mu.Lock()
 	if v, ok := c.vars[key]; ok {

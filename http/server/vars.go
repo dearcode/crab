@@ -31,7 +31,7 @@ func UnmarshalForm(req *http.Request, result interface{}) error {
 	}, result)
 }
 
-//UnmarshalJSON 解析body中的json数据.
+// UnmarshalJSON 解析body中的json数据.
 func UnmarshalJSON(req *http.Request, result interface{}) error {
 	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {
@@ -98,22 +98,22 @@ func UnmarshalValidate(req *http.Request, postion VariablePostion, result interf
 	return errors.Trace(err)
 }
 
-//ParseHeaderVars 解析并验证头中参数.
+// ParseHeaderVars 解析并验证头中参数.
 func ParseHeaderVars(req *http.Request, result interface{}) error {
 	return UnmarshalValidate(req, HEADER, result)
 }
 
-//ParseFormVars 解析并验证Form表单中参数.
+// ParseFormVars 解析并验证Form表单中参数.
 func ParseFormVars(req *http.Request, result interface{}) error {
 	return UnmarshalValidate(req, FORM, result)
 }
 
-//ParseJSONVars 解析并验证Body中的Json参数.
+// ParseJSONVars 解析并验证Body中的Json参数.
 func ParseJSONVars(req *http.Request, result interface{}) error {
 	return UnmarshalValidate(req, JSON, result)
 }
 
-//ParseVars 通用解析，先解析url,再解析body,最后验证结果
+// ParseVars 通用解析，先解析url,再解析body,最后验证结果
 func ParseVars(req *http.Request, result interface{}) error {
 	if result == nil {
 		return meta.ErrArgIsNil
@@ -132,7 +132,7 @@ func ParseVars(req *http.Request, result interface{}) error {
 	return errors.Trace(err)
 }
 
-//ParseURLVars 解析url中参数.
+// ParseURLVars 解析url中参数.
 func ParseURLVars(req *http.Request, result interface{}) error {
 	values := req.URL.Query()
 	return reflectStruct(func(key string) (string, bool) {

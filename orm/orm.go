@@ -14,7 +14,7 @@ import (
 	"dearcode.net/crab/util/str"
 )
 
-//Stmt db stmt.
+// Stmt db stmt.
 type Stmt struct {
 	table  string
 	where  string
@@ -28,12 +28,12 @@ type Stmt struct {
 	logger *log.Logger
 }
 
-//IsNotFound error为not found.
+// IsNotFound error为not found.
 func IsNotFound(err error) bool {
 	return errors.Cause(err) == meta.ErrNotFound
 }
 
-//NewStmt new db stmt.
+// NewStmt new db stmt.
 func NewStmt(db *sql.DB, table string) *Stmt {
 	return &Stmt{
 		table: table,
@@ -41,13 +41,13 @@ func NewStmt(db *sql.DB, table string) *Stmt {
 	}
 }
 
-//SetLogger 输出log.
+// SetLogger 输出log.
 func (s *Stmt) SetLogger(l *log.Logger) *Stmt {
 	s.logger = l
 	return s
 }
 
-//Where 添加查询条件
+// Where 添加查询条件
 func (s *Stmt) Where(f string, args ...interface{}) *Stmt {
 	if len(args) > 0 {
 		s.where = fmt.Sprintf(f, args...)
@@ -57,37 +57,37 @@ func (s *Stmt) Where(f string, args ...interface{}) *Stmt {
 	return s
 }
 
-//Sort 添加sort
+// Sort 添加sort
 func (s *Stmt) Sort(sort string) *Stmt {
 	s.sort = sort
 	return s
 }
 
-//Group 添加group by.
+// Group 添加group by.
 func (s *Stmt) Group(group string) *Stmt {
 	s.group = group
 	return s
 }
 
-//Order 添加order
+// Order 添加order
 func (s *Stmt) Order(order string) *Stmt {
 	s.order = order
 	return s
 }
 
-//Offset 添加offset
+// Offset 添加offset
 func (s *Stmt) Offset(offset int) *Stmt {
 	s.offset = offset
 	return s
 }
 
-//Limit 添加limit
+// Limit 添加limit
 func (s *Stmt) Limit(limit int) *Stmt {
 	s.limit = limit
 	return s
 }
 
-//sqlQueryBuilder build sql query.
+// sqlQueryBuilder build sql query.
 func (s *Stmt) sqlQueryBuilder(result interface{}) (string, error) {
 	rt := reflect.TypeOf(result)
 	if rt.Kind() != reflect.Ptr {
@@ -118,7 +118,7 @@ func (s *Stmt) addWhere(w string) {
 	s.where += w
 }
 
-//sqlOption where, order, limit
+// sqlOption where, order, limit
 func (s *Stmt) sqlOption(bs *bytes.Buffer) *bytes.Buffer {
 	if s.where != "" {
 		fmt.Fprintf(bs, " where %s", s.where)
@@ -157,7 +157,7 @@ func (s *Stmt) sqlCount() string {
 	return sql
 }
 
-//sqlColumn 生成查询需要的列，目前只是内部用.
+// sqlColumn 生成查询需要的列，目前只是内部用.
 func (s *Stmt) sqlColumn(rt reflect.Type, table string) string {
 	bs := bytes.NewBufferString("")
 
@@ -385,7 +385,7 @@ func (s *Stmt) Query(result interface{}) error {
 	return nil
 }
 
-//Count 查询总数.
+// Count 查询总数.
 func (s *Stmt) Count() (int64, error) {
 	rows, err := s.db.Query(s.sqlCount())
 	if err != nil {
@@ -403,7 +403,7 @@ func (s *Stmt) Count() (int64, error) {
 	return n, nil
 }
 
-//sqlInsert 添加数据
+// sqlInsert 添加数据
 func (s *Stmt) sqlInsert(rt reflect.Type, rv reflect.Value) (sql string, refs []interface{}) {
 	bs := bytes.NewBufferString("insert into ")
 	bs.WriteString(s.table)
@@ -441,7 +441,7 @@ func (s *Stmt) sqlInsert(rt reflect.Type, rv reflect.Value) (sql string, refs []
 	return
 }
 
-//sqlStructField 解析结构体中的字段，根据default及db值内容生成对应key ,value.
+// sqlStructField 解析结构体中的字段，根据default及db值内容生成对应key ,value.
 func (s *Stmt) sqlStructField(f reflect.StructField, isUpdate bool) (key string, val string, ok bool) {
 	if f.PkgPath != "" && !f.Anonymous { // unexported
 		return
@@ -503,7 +503,7 @@ func (s *Stmt) sqlUpdate(rt reflect.Type, rv reflect.Value) (sql string, refs []
 	return s.sqlOption(bs).String(), refs
 }
 
-//Update sql update db.
+// Update sql update db.
 func (s *Stmt) Update(data interface{}) (int64, error) {
 	if data == nil {
 		return 0, errors.Trace(meta.ErrArgIsNil)
@@ -529,7 +529,7 @@ func (s *Stmt) Update(data interface{}) (int64, error) {
 	return r.RowsAffected()
 }
 
-//Insert sql update db.
+// Insert sql update db.
 func (s *Stmt) Insert(data interface{}) (int64, error) {
 	if data == nil {
 		return 0, errors.Trace(meta.ErrArgIsNil)
@@ -607,7 +607,7 @@ func (s *Stmt) BatchInsert(data []interface{}) ([]int64, error) {
 	return ids, nil
 }
 
-//Exec 保留的原始执行接口.
+// Exec 保留的原始执行接口.
 func (s *Stmt) Exec(query string, args ...interface{}) (int64, error) {
 	rs, err := s.db.Exec(query, args...)
 	if err != nil {
@@ -616,7 +616,7 @@ func (s *Stmt) Exec(query string, args ...interface{}) (int64, error) {
 	return rs.RowsAffected()
 }
 
-//Raw 原始sql.
+// Raw 原始sql.
 func (s *Stmt) Raw(query string, args ...interface{}) *Stmt {
 	s.raw = fmt.Sprintf(query, args...)
 	return s

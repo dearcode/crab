@@ -16,7 +16,7 @@ import (
 	"dearcode.net/crab/log"
 )
 
-//HTTPClient 带超时重试控制的http客户端.
+// HTTPClient 带超时重试控制的http客户端.
 type HTTPClient struct {
 	retryTimes        int
 	ignoreStatusCheck bool //忽略http status code(返回非200的不按错误处理)继续解析返回内容
@@ -25,7 +25,7 @@ type HTTPClient struct {
 	logger            *log.Logger
 }
 
-//StatusError http错误.
+// StatusError http错误.
 type StatusError struct {
 	Code    int
 	Message string
@@ -67,7 +67,7 @@ const (
 	defaultTimeout    = 300
 )
 
-//New 创建一个带超时和重试控制的http client, 单位秒.
+// New 创建一个带超时和重试控制的http client, 单位秒.
 func New() *HTTPClient {
 	hc := &HTTPClient{
 		client:     http.Client{},
@@ -79,25 +79,25 @@ func New() *HTTPClient {
 	return hc
 }
 
-//Timeout 设置超时时间，单位:秒, 默认300秒.
+// Timeout 设置超时时间，单位:秒, 默认300秒.
 func (c *HTTPClient) Timeout(t int) *HTTPClient {
 	c.timeout = time.Duration(t) * time.Second
 	return c
 }
 
-//IgnoreStatusCheck 忽略http返回状态(200)检测.
+// IgnoreStatusCheck 忽略http返回状态(200)检测.
 func (c *HTTPClient) IgnoreStatusCheck() *HTTPClient {
 	c.ignoreStatusCheck = true
 	return c
 }
 
-//SetLogger 开启日志.
+// SetLogger 开启日志.
 func (c *HTTPClient) SetLogger(l *log.Logger) *HTTPClient {
 	c.logger = l
 	return c
 }
 
-//RetryTimes 设置连接重试次数，默认为3次
+// RetryTimes 设置连接重试次数，默认为3次
 func (c *HTTPClient) RetryTimes(t int) *HTTPClient {
 	c.retryTimes = t
 	return c
@@ -147,12 +147,12 @@ func (c HTTPClient) do(method, url string, headers map[string]string, body []byt
 	return data, nil
 }
 
-//Get 发送Get请求.
+// Get 发送Get请求.
 func (c HTTPClient) Get(url string, headers map[string]string, body []byte) ([]byte, error) {
 	return c.do("GET", url, headers, body)
 }
 
-//GetJSON 发送Get请求, 并解析返回json.
+// GetJSON 发送Get请求, 并解析返回json.
 func (c HTTPClient) GetJSON(url string, headers map[string]string, resp interface{}) error {
 	buf, err := c.do("GET", url, headers, nil)
 	if err != nil {
@@ -162,12 +162,12 @@ func (c HTTPClient) GetJSON(url string, headers map[string]string, resp interfac
 	return errors.Trace(json.Unmarshal(buf, resp))
 }
 
-//Post 发Post请求.
+// Post 发Post请求.
 func (c HTTPClient) Post(url string, headers map[string]string, body []byte) ([]byte, error) {
 	return c.do("POST", url, headers, body)
 }
 
-//PostJSON 发送json结构数据请求，并解析返回结果.
+// PostJSON 发送json结构数据请求，并解析返回结果.
 func (c HTTPClient) PostJSON(url string, headers map[string]string, data interface{}, resp interface{}) error {
 	buf, err := json.Marshal(data)
 	if err != nil {
@@ -187,12 +187,12 @@ func (c HTTPClient) PostJSON(url string, headers map[string]string, data interfa
 	return json.Unmarshal(buf, resp)
 }
 
-//Put 发送put请求.
+// Put 发送put请求.
 func (c HTTPClient) Put(url string, headers map[string]string, body []byte) ([]byte, error) {
 	return c.do("PUT", url, headers, body)
 }
 
-//PutJSON 发送json请求解析返回结果.
+// PutJSON 发送json请求解析返回结果.
 func (c HTTPClient) PutJSON(url string, headers map[string]string, data interface{}, resp interface{}) error {
 	buf, err := json.Marshal(data)
 	if err != nil {
@@ -211,12 +211,12 @@ func (c HTTPClient) PutJSON(url string, headers map[string]string, data interfac
 	return json.Unmarshal(buf, resp)
 }
 
-//Delete 发送delete请求.
+// Delete 发送delete请求.
 func (c HTTPClient) Delete(url string, headers map[string]string, body []byte) ([]byte, error) {
 	return c.do("DELETE", url, headers, body)
 }
 
-//DeleteJSON 发送JSON格式delete请求, 并解析返回结果.
+// DeleteJSON 发送JSON格式delete请求, 并解析返回结果.
 func (c HTTPClient) DeleteJSON(url string, headers map[string]string, resp interface{}) error {
 	buf, err := c.do("DELETE", url, headers, nil)
 	if err != nil {

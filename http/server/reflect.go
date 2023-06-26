@@ -8,7 +8,7 @@ import (
 	"github.com/juju/errors"
 )
 
-//fieldName 解析field中的json,db等标签，提取别名
+// fieldName 解析field中的json,db等标签，提取别名
 func fieldName(f reflect.StructField) string {
 	if name := f.Tag.Get("json"); name != "" {
 		return name
@@ -127,7 +127,7 @@ func reflectKeyValue(getVal getValueFunc, rt reflect.Type, rv reflect.Value, lev
 	return nil
 }
 
-//reflectStruct 反射结构体中字段，根据字段名或标签取对应结果，并赋值返回
+// reflectStruct 反射结构体中字段，根据字段名或标签取对应结果，并赋值返回
 func reflectStruct(getVal getValueFunc, obj interface{}) error {
 	rt := reflect.TypeOf(obj)
 	rv := reflect.ValueOf(obj)

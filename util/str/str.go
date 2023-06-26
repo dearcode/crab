@@ -16,7 +16,7 @@ func TrimSplit(raw, sep string) []string {
 	return ss
 }
 
-//FieldEscape 转换为小写下划线分隔
+// FieldEscape 转换为小写下划线分隔
 func FieldEscape(k string) string {
 	buf := []byte{}
 	up := true

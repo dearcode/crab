@@ -21,7 +21,7 @@ type DB struct {
 	Timeout  int
 }
 
-//NewDB create db instance, timeout 单位:秒.
+// NewDB create db instance, timeout 单位:秒.
 func NewDB(ip string, port int, dbName, user, pass, charset string, timeout int) *DB {
 	return &DB{
 		IP:       ip,

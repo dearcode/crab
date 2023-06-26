@@ -7,10 +7,10 @@ import (
 	"strings"
 )
 
-//VariablePostion 变量位置.
+// VariablePostion 变量位置.
 type VariablePostion int
 
-//Method 请求方式.
+// Method 请求方式.
 type Method int
 
 const (
@@ -24,7 +24,7 @@ const (
 	FORM
 )
 
-//String 类型转字符串
+// String 类型转字符串
 func (p VariablePostion) String() string {
 	switch p {
 	case URI:
@@ -52,7 +52,7 @@ const (
 	RESTful
 )
 
-//NewMethod 转换字符串method到Method类型.
+// NewMethod 转换字符串method到Method类型.
 func NewMethod(m string) Method {
 	switch strings.ToUpper(m) {
 	case http.MethodGet:
@@ -68,7 +68,7 @@ func NewMethod(m string) Method {
 	return RESTful
 }
 
-//String 类型转字符串
+// String 类型转字符串
 func (m Method) String() string {
 	switch m {
 	case GET:
@@ -85,14 +85,14 @@ func (m Method) String() string {
 	return "NIL"
 }
 
-//Response 通用返回结果
+// Response 通用返回结果
 type Response struct {
 	Status  int
 	Message string      `json:",omitempty"`
 	Data    interface{} `json:",omitempty"`
 }
 
-//SendResponse 返回结果，支持json
+// SendResponse 返回结果，支持json
 func SendResponse(w http.ResponseWriter, status int, f string, args ...interface{}) {
 	w.Header().Add("Content-Type", "application/json")
 	r := Response{Status: status, Message: f}
@@ -104,20 +104,20 @@ func SendResponse(w http.ResponseWriter, status int, f string, args ...interface
 	w.Write(buf)
 }
 
-//Abort 返回结果，支持json
+// Abort 返回结果，支持json
 func Abort(w http.ResponseWriter, f string, args ...interface{}) {
 	w.WriteHeader(http.StatusInternalServerError)
 	fmt.Fprintf(w, f, args...)
 }
 
-//SendResponseData 返回结果，支持json
+// SendResponseData 返回结果，支持json
 func SendResponseData(w http.ResponseWriter, data interface{}) {
 	w.Header().Add("Content-Type", "application/json")
 	buf, _ := json.Marshal(&Response{Data: data})
 	w.Write(buf)
 }
 
-//SendErrorDetail 返回详细的错误信息，支持json
+// SendErrorDetail 返回详细的错误信息，支持json
 func SendErrorDetail(w http.ResponseWriter, status int, data interface{}, f string, args ...interface{}) {
 	w.Header().Add("Content-Type", "application/json")
 	resp := Response{Status: status, Message: f, Data: data}
@@ -128,7 +128,7 @@ func SendErrorDetail(w http.ResponseWriter, status int, data interface{}, f stri
 	w.Write(buf)
 }
 
-//SendRows 为bootstrap-talbe返回结果，根据条件查找，total是总记录数，rows是数据
+// SendRows 为bootstrap-talbe返回结果，根据条件查找，total是总记录数，rows是数据
 func SendRows(w http.ResponseWriter, total interface{}, data interface{}) {
 	var resp = struct {
 		Total interface{} `json:"total"`
@@ -140,14 +140,14 @@ func SendRows(w http.ResponseWriter, total interface{}, data interface{}) {
 	w.Write(buf)
 }
 
-//SendData 为bootstrap-talbe客户端分页返回结果.
+// SendData 为bootstrap-talbe客户端分页返回结果.
 func SendData(w http.ResponseWriter, data interface{}) {
 	w.Header().Add("Content-Type", "application/json")
 	buf, _ := json.Marshal(data)
 	w.Write(buf)
 }
 
-//SendResponseOK 返回成功结果.
+// SendResponseOK 返回成功结果.
 func SendResponseOK(w http.ResponseWriter) {
 	w.Header().Add("Content-Type", "application/json")
 	buf, _ := json.Marshal(&Response{})

@@ -1,6 +1,7 @@
 package log
 
 import (
+	"context"
 	"os"
 	"testing"
 	"time"
@@ -27,4 +28,23 @@ func TestLog(t *testing.T) {
 	l.Info(time.Now())
 	os.Remove(testLogFile)
 
+}
+
+func TestLogContext(t *testing.T) {
+	l := NewLogger()
+	ctx := context.Background()
+
+	ctx = ToContext(ctx, l)
+
+	l2 := FromContext(ctx)
+	if l2 == nil {
+		t.Fatalf("expect l2 != nil, FromContext recv:%v", l2)
+	}
+
+	l3 := FromContext(context.Background())
+	if l3 != nil {
+		t.Fatalf("expect l3 == nil, FromContext recv:%v", l3)
+	}
+
+	l2.Infof("ok")
 }

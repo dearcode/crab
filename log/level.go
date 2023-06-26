@@ -1,6 +1,6 @@
 package log
 
-//Level 日志级别.
+// Level 日志级别.
 type Level int
 
 const (
@@ -16,7 +16,7 @@ const (
 	LogDebug
 )
 
-//stringToLevel 字符串转Level.
+// stringToLevel 字符串转Level.
 func stringToLevel(level string) Level {
 	switch level {
 	case "fatal":
@@ -35,7 +35,7 @@ func stringToLevel(level string) Level {
 	return LogDebug
 }
 
-//Level Level 转字符串.
+// Level Level 转字符串.
 func (l Level) String() string {
 	switch l {
 	case LogFatal:
@@ -52,7 +52,7 @@ func (l Level) String() string {
 	return "unknown"
 }
 
-//color Level转颜色.
+// color Level转颜色.
 func (l Level) color() string {
 	switch l {
 	case LogFatal:

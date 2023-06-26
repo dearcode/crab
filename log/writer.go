@@ -16,7 +16,7 @@ type pos struct {
 	function string
 }
 
-//Logger 日志对象.
+// Logger 日志对象.
 type Logger struct {
 	rolling  bool
 	fileName string
@@ -29,7 +29,7 @@ type Logger struct {
 	mu       sync.Mutex
 }
 
-//NewLogger 创建日志对象.
+// NewLogger 创建日志对象.
 func NewLogger() *Logger {
 	return &Logger{
 		out:      bufio.NewWriter(os.Stdout),
@@ -39,7 +39,7 @@ func NewLogger() *Logger {
 	}
 }
 
-//SetColor 开启/关闭颜色.
+// SetColor 开启/关闭颜色.
 func (l *Logger) SetColor(on bool) *Logger {
 	if l == nil {
 		return nil
@@ -48,7 +48,7 @@ func (l *Logger) SetColor(on bool) *Logger {
 	return l
 }
 
-//SetRolling 每天生成一个文件.
+// SetRolling 每天生成一个文件.
 func (l *Logger) SetRolling(on bool) *Logger {
 	if l == nil {
 		return nil
@@ -58,7 +58,7 @@ func (l *Logger) SetRolling(on bool) *Logger {
 	return l
 }
 
-//SetOutputFile 初始化时设置输出文件.
+// SetOutputFile 初始化时设置输出文件.
 func (l *Logger) SetOutputFile(path string) *Logger {
 	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -74,7 +74,7 @@ func (l *Logger) SetOutputFile(path string) *Logger {
 	return l
 }
 
-//SetLevel 设置日志级别.
+// SetLevel 设置日志级别.
 func (l *Logger) SetLevel(level Level) *Logger {
 	if l == nil {
 		return nil
@@ -83,7 +83,7 @@ func (l *Logger) SetLevel(level Level) *Logger {
 	return l
 }
 
-//SetLevelByString 设置字符串格式的日志级别.
+// SetLevelByString 设置字符串格式的日志级别.
 func (l *Logger) SetLevelByString(level string) *Logger {
 	if l == nil {
 		return nil
@@ -184,7 +184,7 @@ func (l *Logger) write(t Level, format string, argv ...interface{}) {
 	l.out.Flush()
 }
 
-//Info .
+// Info .
 func (l *Logger) Info(v ...interface{}) {
 	if l == nil {
 		return
@@ -192,7 +192,7 @@ func (l *Logger) Info(v ...interface{}) {
 	l.write(LogInfo, fmt.Sprint(v...))
 }
 
-//Infof .
+// Infof .
 func (l *Logger) Infof(format string, v ...interface{}) {
 	if l == nil {
 		return
@@ -200,7 +200,7 @@ func (l *Logger) Infof(format string, v ...interface{}) {
 	l.write(LogInfo, format, v...)
 }
 
-//Debug .
+// Debug .
 func (l *Logger) Debug(v ...interface{}) {
 	if l != nil {
 		return
@@ -208,7 +208,7 @@ func (l *Logger) Debug(v ...interface{}) {
 	l.write(LogDebug, fmt.Sprint(v...))
 }
 
-//Debugf .
+// Debugf .
 func (l *Logger) Debugf(format string, v ...interface{}) {
 	if l == nil {
 		return
@@ -216,7 +216,7 @@ func (l *Logger) Debugf(format string, v ...interface{}) {
 	l.write(LogDebug, format, v...)
 }
 
-//Warning .
+// Warning .
 func (l *Logger) Warning(v ...interface{}) {
 	if l == nil {
 		return
@@ -224,7 +224,7 @@ func (l *Logger) Warning(v ...interface{}) {
 	l.write(LogWarning, fmt.Sprint(v...))
 }
 
-//Warningf .
+// Warningf .
 func (l *Logger) Warningf(format string, v ...interface{}) {
 	if l == nil {
 		return
@@ -232,7 +232,7 @@ func (l *Logger) Warningf(format string, v ...interface{}) {
 	l.write(LogWarning, format, v...)
 }
 
-//Error .
+// Error .
 func (l *Logger) Error(v ...interface{}) {
 	if l == nil {
 		return
@@ -240,7 +240,7 @@ func (l *Logger) Error(v ...interface{}) {
 	l.write(LogError, fmt.Sprint(v...))
 }
 
-//Errorf .
+// Errorf .
 func (l *Logger) Errorf(format string, v ...interface{}) {
 	if l == nil {
 		return
@@ -248,7 +248,7 @@ func (l *Logger) Errorf(format string, v ...interface{}) {
 	l.write(LogError, format, v...)
 }
 
-//Fatal .
+// Fatal .
 func (l *Logger) Fatal(v ...interface{}) {
 	if l == nil {
 		return
@@ -257,7 +257,7 @@ func (l *Logger) Fatal(v ...interface{}) {
 	os.Exit(-1)
 }
 
-//Fatalf .
+// Fatalf .
 func (l *Logger) Fatalf(format string, v ...interface{}) {
 	if l == nil {
 		return

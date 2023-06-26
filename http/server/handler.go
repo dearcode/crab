@@ -17,7 +17,7 @@ import (
 	"dearcode.net/crab/log"
 )
 
-//userKey 用户自定义的key
+// userKey 用户自定义的key
 type userKey string
 
 type handlerRegexp struct {
@@ -73,7 +73,7 @@ func (p *prefix) Less(bi btree.Item) bool {
 	return strings.Compare(p.path, bi.(*prefix).path) == 1
 }
 
-//NameToPath 类名转路径
+// NameToPath 类名转路径
 func NameToPath(name string, depth int) string {
 	buf := []byte(name)
 	d := 0
@@ -90,12 +90,12 @@ func NameToPath(name string, depth int) string {
 	return string(buf[index:])
 }
 
-//Register 只要struct实现了Get(),Post(),Delete(),Put()接口就可以自动注册
+// Register 只要struct实现了Get(),Post(),Delete(),Put()接口就可以自动注册
 func Register(obj interface{}) error {
 	return register(obj, "", false)
 }
 
-//RegisterMust 只要struct实现了Get(),Post(),Delete(),Put()接口就可以自动注册, 如果添加失败panic.
+// RegisterMust 只要struct实现了Get(),Post(),Delete(),Put()接口就可以自动注册, 如果添加失败panic.
 func RegisterMust(obj interface{}) {
 	if err := register(obj, "", false); err != nil {
 		panic(err.Error())
@@ -103,19 +103,19 @@ func RegisterMust(obj interface{}) {
 
 }
 
-//RegisterPath 注册url完全匹配.
+// RegisterPath 注册url完全匹配.
 func RegisterPath(obj interface{}, path string) error {
 	return register(obj, path, false)
 }
 
-//RegisterPathMust 注册url完全匹配，如果遇到错误panic.
+// RegisterPathMust 注册url完全匹配，如果遇到错误panic.
 func RegisterPathMust(obj interface{}, path string) {
 	if err := register(obj, path, false); err != nil {
 		panic(err.Error())
 	}
 }
 
-//RegisterHandler 注册自定义url完全匹配.
+// RegisterHandler 注册自定义url完全匹配.
 func RegisterHandler(call func(http.ResponseWriter, *http.Request), method, path string) error {
 	h := handler{
 		path: fmt.Sprintf("%v%v", method, path),
@@ -136,12 +136,12 @@ func RegisterHandler(call func(http.ResponseWriter, *http.Request), method, path
 	return nil
 }
 
-//RegisterPrefix 注册url前缀.
+// RegisterPrefix 注册url前缀.
 func RegisterPrefix(obj interface{}, path string) error {
 	return register(obj, path, true)
 }
 
-//RegisterPrefixMust 注册url前缀并保证成功.
+// RegisterPrefixMust 注册url前缀并保证成功.
 func RegisterPrefixMust(obj interface{}, path string) {
 	if err := RegisterPrefix(obj, path); err != nil {
 		panic(err.Error())
@@ -245,7 +245,7 @@ func register(obj interface{}, path string, isPrefix bool) error {
 	return nil
 }
 
-//AddFilter 添加过滤函数.
+// AddFilter 添加过滤函数.
 func AddFilter(filter Filter) {
 	server.mu.Lock()
 	defer server.mu.Unlock()
@@ -266,7 +266,7 @@ func parseRequestValues(path string, ur handlerRegexp) context.Context {
 	return ctx
 }
 
-//RESTValue 取restful方式传递的值
+// RESTValue 取restful方式传递的值
 func RESTValue(req *http.Request, key string) (string, bool) {
 	i := req.Context().Value(userKey(key))
 	if i == nil {
@@ -315,7 +315,7 @@ func getHandler(method, path string) (func(http.ResponseWriter, *http.Request), 
 	return nil, nil
 }
 
-//ServeHTTP 真正对外服务接口
+// ServeHTTP 真正对外服务接口
 func (s *httpServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if p := recover(); p != nil {
@@ -351,7 +351,7 @@ func defaultFilter(_ http.ResponseWriter, r *http.Request) *http.Request {
 	return r
 }
 
-//Start 启动httpServer.
+// Start 启动httpServer.
 func Start(addr string) (net.Listener, error) {
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
