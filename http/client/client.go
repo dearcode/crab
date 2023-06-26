@@ -5,7 +5,7 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"strings"
@@ -119,7 +119,7 @@ func (c HTTPClient) do(method, url string, headers map[string]string, body []byt
 	}
 	defer resp.Body.Close()
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -130,7 +130,7 @@ func (c HTTPClient) do(method, url string, headers map[string]string, body []byt
 			return nil, errors.Trace(err)
 		}
 		defer gr.Close()
-		data, err = ioutil.ReadAll(gr)
+		data, err = io.ReadAll(gr)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}

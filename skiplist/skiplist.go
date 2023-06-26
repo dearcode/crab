@@ -19,10 +19,11 @@ type nodes *node
 type Skiplist struct {
 	maxLevel int
 	lists    []nodes
+	rand     *rand.Rand
 }
 
 func New(maxLevel int) *Skiplist {
-	rand.Seed(time.Now().UnixNano())
+
 	lists := make([]nodes, maxLevel)
 	first := &node{
 		next: make([]*node, maxLevel),
@@ -34,6 +35,7 @@ func New(maxLevel int) *Skiplist {
 	return &Skiplist{
 		maxLevel: maxLevel,
 		lists:    lists,
+		rand:     rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 }
 
@@ -75,7 +77,7 @@ func (s *Skiplist) Get(key string) interface{} {
 }
 
 func (s *Skiplist) randomLevel() int {
-	return rand.Intn(s.maxLevel)
+	return s.rand.Intn(s.maxLevel)
 }
 
 func (s *Skiplist) priorNodes(key string) []*node {

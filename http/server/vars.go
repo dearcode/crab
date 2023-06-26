@@ -2,7 +2,7 @@ package server
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -33,7 +33,7 @@ func UnmarshalForm(req *http.Request, result interface{}) error {
 
 // UnmarshalJSON 解析body中的json数据.
 func UnmarshalJSON(req *http.Request, result interface{}) error {
-	body, err := ioutil.ReadAll(req.Body)
+	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		return errors.Trace(err)
 	}
@@ -47,7 +47,7 @@ func UnmarshalJSON(req *http.Request, result interface{}) error {
 
 // UnmarshalBody 解析body中的json, form数据.
 func UnmarshalBody(req *http.Request, result interface{}) error {
-	body, err := ioutil.ReadAll(req.Body)
+	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		return errors.Trace(err)
 	}

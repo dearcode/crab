@@ -2,14 +2,14 @@ package server
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"testing"
 )
 
 func TestVarsForm(t *testing.T) {
 	url := "http://www.baidu.com/test/"
-	body := ioutil.NopCloser(bytes.NewBufferString("email=test@mailchina.org&passwd=1qaz"))
+	body := io.NopCloser(bytes.NewBufferString("email=test@mailchina.org&passwd=1qaz"))
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -64,7 +64,7 @@ func TestVarsUrl(t *testing.T) {
 
 func TestVarsJSON(t *testing.T) {
 	url := "http://www.baidu.com/test/"
-	body := ioutil.NopCloser(bytes.NewBufferString(`{"email":"test@mailchina.org","passwd":"1qaz"}`))
+	body := io.NopCloser(bytes.NewBufferString(`{"email":"test@mailchina.org","passwd":"1qaz"}`))
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
 		t.Fatal(err.Error())

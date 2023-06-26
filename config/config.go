@@ -2,7 +2,7 @@ package config
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -31,10 +31,10 @@ func configSplit(raw, sep string) []string {
 	return []string{raw}
 }
 
-//NewConfig 加载配置文件.
+// NewConfig 加载配置文件.
 func NewConfig(path, body string) (c *Config, err error) {
 	if path != "" {
-		dat, err := ioutil.ReadFile(path)
+		dat, err := os.ReadFile(path)
 		if err != nil {
 			return nil, err
 		}
@@ -69,7 +69,7 @@ func makeKey(s, k string) string {
 	return strings.ToLower(strings.TrimSpace(s) + "/" + strings.TrimSpace(k))
 }
 
-//GetData 获取指定段的指定key的值, 支持int,string.
+// GetData 获取指定段的指定key的值, 支持int,string.
 func (c *Config) GetData(s, k string, result interface{}, d interface{}) error {
 	rt := reflect.TypeOf(result)
 	if rt.Kind() != reflect.Ptr {
@@ -126,7 +126,7 @@ func (c *Config) GetData(s, k string, result interface{}, d interface{}) error {
 	return nil
 }
 
-//ParseConfig 解析内存中配置文件.
+// ParseConfig 解析内存中配置文件.
 func ParseConfig(body string, result interface{}) error {
 	c, err := NewConfig("", body)
 	if err != nil {
@@ -135,7 +135,7 @@ func ParseConfig(body string, result interface{}) error {
 	return c.Parse(result)
 }
 
-//LoadConfig 加载文件形式配置文件, 并解析成指定结构.
+// LoadConfig 加载文件形式配置文件, 并解析成指定结构.
 func LoadConfig(path string, result interface{}) error {
 	c, err := NewConfig(path, "")
 	if err != nil {
@@ -216,7 +216,7 @@ func (c Config) getDefault(k reflect.Kind, v string) (interface{}, error) {
 	}
 }
 
-//Parse 根据result结构读配置文件.
+// Parse 根据result结构读配置文件.
 func (c *Config) Parse(result interface{}) error {
 	rt := reflect.TypeOf(result)
 	rv := reflect.ValueOf(result)
